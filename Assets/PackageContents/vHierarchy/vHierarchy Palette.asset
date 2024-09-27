@@ -1,0 +1,126 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 61290d425f1c94a8cbfb56f754ca6757, type: 3}
+  m_Name: vHierarchy Palette
+  m_EditorClassIdentifier: 
+  colors:
+  - {r: 0.16, g: 0.16, b: 0.16, a: 1}
+  - {r: 0.609, g: 0.231, b: 0.23100014, a: 0.1}
+  - {r: 0.55825, g: 0.471625, b: 0.21175, a: 0.1}
+  - {r: 0.34999996, g: 0.5075, b: 0.1925, a: 0.1}
+  - {r: 0.1925, g: 0.5075, b: 0.27124998, a: 0.1}
+  - {r: 0.1925, g: 0.50750005, b: 0.5075, a: 0.1}
+  - {r: 0.259875, g: 0.36618757, b: 0.685125, a: 0.1}
+  - {r: 0.4550001, g: 0.25024998, b: 0.65975, a: 0.1}
+  - {r: 0.53287494, g: 0.20212498, b: 0.4501876, a: 0.1}
+  colorsEnabled: 1
+  iconRows:
+  - builtinIcons:
+    - Folder Icon
+    - Canvas Icon
+    - AvatarMask On Icon
+    - cs Script Icon
+    - StandaloneInputModule Icon
+    - EventSystem Icon
+    - Terrain Icon
+    - ScriptableObject Icon
+    customIcons: []
+    enabled: 1
+  - builtinIcons:
+    - Camera Icon
+    - ParticleSystem Icon
+    - TrailRenderer Icon
+    - Material Icon
+    - ReflectionProbe Icon
+    customIcons: []
+    enabled: 1
+  - builtinIcons:
+    - Light Icon
+    - DirectionalLight Icon
+    - LightmapParameters Icon
+    - LightProbes Icon
+    customIcons:
+    - 32b23d5d74f3aee4f9364e34e2f59379
+    - aca45e74fd5117e499180b8f31d39395
+    - 
+    - 
+    - 
+    enabled: 1
+  - builtinIcons:
+    - Rigidbody Icon
+    - BoxCollider Icon
+    - SphereCollider Icon
+    - CapsuleCollider Icon
+    - WheelCollider Icon
+    - MeshCollider Icon
+    customIcons: []
+    enabled: 1
+  - builtinIcons:
+    - AudioSource Icon
+    - AudioClip Icon
+    - AudioListener Icon
+    - AudioEchoFilter Icon
+    - AudioReverbZone Icon
+    customIcons: []
+    enabled: 1
+  - builtinIcons:
+    - PreMatCube
+    - PreMatSphere
+    - PreMatCylinder
+    - PreMatQuad
+    - Favorite
+    - Settings Icon
+    customIcons: []
+    enabled: 1
+  - builtinIcons: []
+    customIcons:
+    - da502dfbc37b8764e934fbca1c0ffe2b
+    - fad083a3b7967a146a1199877ec552ae
+    - a2e40ea3493a12e44a9d8c6e6f0a7714
+    - b5b051800ef1e684a9030c2732198724
+    - 409dd68266057544a908a6984769c06b
+    - 7864677bfe3c8784b95f8ea211d2134b
+    - 4c9573c4cb731804f94c92cd3d223752
+    enabled: 1
+  - builtinIcons: []
+    customIcons:
+    - 9488699415b9e9f4ba9c103448126947
+    - 19d609398b9e0c74ea28d8bc56861338
+    - 71ea7a606be094c409ec99912848889b
+    - e28fa82f2ef8fdb4ca7f707ac1f71c71
+    - ad048eddfb7308142a571e462bd0148f
+    - 219ef7c24b7b64a48bc3dbcc74f3c341
+    - be273426f2b935549b71ff4d4719ba20
+    enabled: 1
+  - builtinIcons: []
+    customIcons:
+    - cbb4ca2d03051d149a77466d5ecd32e2
+    - f4fe26e322f49c043a71d8d4a90a26d0
+    - 4a43320271cb21e499808f07068a3555
+    - 494f141de34e1544fb6bbd4ed75d0723
+    - c72b7422c8c031341a8049cd98c70333
+    - 1cc14953b9c1fa24fb9753b2409b9fc1
+    - 5efc401a017eac64bb8aa2379f2a709d
+    enabled: 1
+  - builtinIcons: []
+    customIcons:
+    - 5a4e3fd89211fad4583ce56ab2720f81
+    - 407e5f558affad541b21da7aad31b4bd
+    - 17fde1aa1a7ea1a4a8121a903929df92
+    - aa9d08e8d6abcd24d9740e791eef3b3c
+    - 79a41a9da062fea458a5d085eb2cad1b
+    - 1d3867f7636c05847941687bcd2f5ae9
+    - d5312b765566e4c438e7014905f3ee36
+    enabled: 1
+  - builtinIcons: []
+    customIcons: []
+    enabled: 1
