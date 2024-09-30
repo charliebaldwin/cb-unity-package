@@ -34,6 +34,11 @@ MonoBehaviour:
         - globalObjectIdString: GlobalObjectId_V1-2-99c9720ab356a0642a771bea13969a05-1708585041-0
         - globalObjectIdString: GlobalObjectId_V1-2-99c9720ab356a0642a771bea13969a05-97445336-0
         - globalObjectIdString: GlobalObjectId_V1-2-99c9720ab356a0642a771bea13969a05-2146847089-0
+        - globalObjectIdString: GlobalObjectId_V1-2-99c9720ab356a0642a771bea13969a05-425285662-0
+        - globalObjectIdString: GlobalObjectId_V1-2-99c9720ab356a0642a771bea13969a05-594586255-0
+        - globalObjectIdString: GlobalObjectId_V1-2-99c9720ab356a0642a771bea13969a05-1600243323-0
+        - globalObjectIdString: GlobalObjectId_V1-2-99c9720ab356a0642a771bea13969a05-5356231730974947354-530650379
+        - globalObjectIdString: GlobalObjectId_V1-2-99c9720ab356a0642a771bea13969a05-972566080-0
         values:
         - colorIndex: 0
           iconNameOrGuid: fad083a3b7967a146a1199877ec552ae
@@ -67,3 +72,13 @@ MonoBehaviour:
           iconNameOrGuid: Canvas Icon
         - colorIndex: 7
           iconNameOrGuid: 71ea7a606be094c409ec99912848889b
+        - colorIndex: 2
+          iconNameOrGuid: 
+        - colorIndex: 0
+          iconNameOrGuid: 19d609398b9e0c74ea28d8bc56861338
+        - colorIndex: 0
+          iconNameOrGuid: 409dd68266057544a908a6984769c06b
+        - colorIndex: 0
+          iconNameOrGuid: 7864677bfe3c8784b95f8ea211d2134b
+        - colorIndex: 0
+          iconNameOrGuid: 494f141de34e1544fb6bbd4ed75d0723

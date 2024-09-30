@@ -1,0 +1,55 @@
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CSMain
+static const int threadGroupSize = 1024;
+
+struct Boid {
+    float3 position;
+    float3 direction;
+
+    float3 flockCenter;
+    float3 flockDirection;
+    float3 avoidDirection;
+
+    float viewRadius;
+    float avoidRadius;
+
+    int numFlockmates;
+};
+
+RWStructuredBuffer<Boid> boids;
+uint numBoids;
+
+
+[numthreads(threadGroupSize, 1, 1)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+    uint a = id.x; 
+
+    boids[a].numFlockmates = 0;
+    boids[a].flockCenter = float3(0,0,0);
+    boids[a].flockDirection = boids[a].direction;
+    boids[a].avoidDirection = float3(0,0,0); 
+
+    // for this boid (id), iterate through all other boids
+    for (uint b = 0; b < numBoids; b++){
+        if (a != b){ 
+            
+            float dist = distance(boids[a].position, boids[b].position);
+            float sharedAvoidRadius = boids[a].avoidRadius + boids[b].avoidRadius;
+
+            if (dist > 0 && dist < boids[a].viewRadius) { // maybe don't need the dist > 0 part
+                boids[a].numFlockmates += 1;
+                boids[a].flockDirection += boids[b].direction;
+                boids[a].flockCenter += boids[b].position;
+
+                if (dist < sharedAvoidRadius) {
+                    boids[a].avoidDirection += normalize(boids[a].position - boids[b].position);
+                }
+            }
+        }
+    }
+
+    boids[a].flockCenter = boids[a].flockCenter / boids[a].numFlockmates;
+    boids[a].flockDirection = boids[a].flockDirection / boids[a].numFlockmates;
+    
+}
