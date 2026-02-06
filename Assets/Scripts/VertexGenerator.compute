@@ -1,0 +1,73 @@
+#include "Packages/jp.keijiro.noiseshader/Shader/SimplexNoise3D.hlsl"
+
+
+
+
+#pragma kernel GenerateGrid
+
+RWTexture3D<int> Voxels;
+
+[numthreads(8,8,8)]
+void GenerateGrid (uint3 id : SV_DispatchThreadID)
+{
+    // TODO: insert actual code here!
+
+   // Result[id.xy] = float4(id.x & id.y, (id.x & 15)/15.0, (id.y & 15)/15.0, 0.0);
+}
+
+
+
+
+#pragma kernel ComputeMesh
+
+//RWTexture3D<int> Voxels;
+RWStructuredBuffer<float3> Vertices;
+RWStructuredBuffer<float3> Normals;
+RWStructuredBuffer<int> Triangles;
+
+uint Size;
+
+struct Connections {
+    int nx, px, ny, py, nz, pz;
+}
+
+float3[] GenerateQuadVerts (float3 center, float3 normal) {
+    float3[] result = float3[4];
+}
+
+
+[numthreads(8,8,8)]
+void ComputeMesh (uint3 id : SV_DispatchThreadID)
+{
+    int v = Voxels[id.xyz];
+
+    if (v == 1) {
+        Connections adj;
+        adj.nx=1;
+        adj.px=1;
+        adj.ny=1;
+        adj.py=1;
+        adj.nz=1;
+        adj.pz=1;
+
+        if (id.x > 0) {
+           adj.nx = 1-Voxels[id.xyz + uint3(-1, 0, 0)]; 
+        }
+        if (id.x < Size-1) {
+           adj.px = 1-Voxels[id.xyz + uint3( 1, 0, 0)]; 
+        }
+        if (id.y > 0) {
+           adj.ny = 1-Voxels[id.xyz + uint3( 0,-1, 0)]; 
+        }
+        if (id.y < Size-1) {
+           adj.py = 1-Voxels[id.xyz + uint3( 0, 1, 0)]; 
+        }
+        if (id.z > 0) {
+           adj.nz = 1-Voxels[id.xyz + uint3( 0, 0,-1)]; 
+        }
+        if (id.z < Size-1) {
+           adj.pz = 1-Voxels[id.xyz + uint3( 0, 0, 1)]; 
+        }
+
+    }
+}

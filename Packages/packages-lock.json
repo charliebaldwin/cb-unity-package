@@ -211,6 +211,12 @@
       },
       "url": "https://packages.unity.com"
     },
+    "jp.keijiro.noiseshader": {
+      "version": "file:C:/Users/cbaldwin/Downloads/jp.keijiro.noiseshader",
+      "depth": 0,
+      "source": "local",
+      "dependencies": {}
+    },
     "com.unity.modules.accessibility": {
       "version": "1.0.0",
       "depth": 0,
