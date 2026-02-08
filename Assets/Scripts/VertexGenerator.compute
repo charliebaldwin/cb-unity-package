@@ -1,73 +1,109 @@
+#pragma kernel GenerateGrid
+#pragma kernel ComputeMesh
+
 #include "Packages/jp.keijiro.noiseshader/Shader/SimplexNoise3D.hlsl"
 
-
-
-
-#pragma kernel GenerateGrid
-
-RWTexture3D<int> Voxels;
+RWTexture3D<float4> Voxels;
+float Size;
+float Scale;
+float Threshold;
 
 [numthreads(8,8,8)]
 void GenerateGrid (uint3 id : SV_DispatchThreadID)
 {
-    // TODO: insert actual code here!
 
-   // Result[id.xy] = float4(id.x & id.y, (id.x & 15)/15.0, (id.y & 15)/15.0, 0.0);
-}
+    float n = SimplexNoise(float3(id.x, id.y, id.z) * Scale) > Threshold ? 1.0 : 0.0;
+    Voxels[id.xyz] = float4(n, n, n, 1.0);
+
+    // Result[id.xy] = float4(id.x & id.y, (id.x & 15)/15.0, (id.y & 15)/15.0, 0.0);
+}   
 
 
 
 
-#pragma kernel ComputeMesh
-
-//RWTexture3D<int> Voxels;
 RWStructuredBuffer<float3> Vertices;
 RWStructuredBuffer<float3> Normals;
+RWStructuredBuffer<float4> Colors;
 RWStructuredBuffer<int> Triangles;
 
-uint Size;
 
-struct Connections {
-    int nx, px, ny, py, nz, pz;
-}
+//struct Connections {
+//    int nx, px, ny, py, nz, pz;
+//}
 
-float3[] GenerateQuadVerts (float3 center, float3 normal) {
-    float3[] result = float3[4];
-}
+//float3[] GenerateQuadVerts (float3 center, float3 normal) {
+//    float3[] result = float3[4];
+//}
+static const float3 vertArray[24] = {
+      float3(-0.5, -0.5,  0.5), float3(-0.5,  0.5,  0.5), float3(-0.5,  0.5, -0.5), float3(-0.5, -0.5, -0.5),  
+      float3( 0.5, -0.5,  0.5), float3( 0.5, -0.5, -0.5), float3( 0.5,  0.5, -0.5), float3( 0.5,  0.5,  0.5),  
+      float3( 0.5, -0.5, -0.5), float3( 0.5, -0.5,  0.5), float3(-0.5, -0.5,  0.5), float3(-0.5, -0.5, -0.5),  
+      float3( 0.5,  0.5,  0.5), float3( 0.5,  0.5, -0.5), float3(-0.5,  0.5, -0.5), float3(-0.5,  0.5,  0.5),  
+      float3( 0.5, -0.5, -0.5), float3(-0.5, -0.5, -0.5), float3(-0.5,  0.5, -0.5), float3( 0.5,  0.5, -0.5),  
+      float3(-0.5, -0.5,  0.5), float3( 0.5, -0.5,  0.5), float3( 0.5,  0.5,  0.5), float3(-0.5,  0.5,  0.5)
+};
+static const float3 normArray[24] =  {
+    float3(-1.0, 0.0, 0.0), float3(-1.0, 0.0, 0.0), float3(-1.0, 0.0, 0.0), float3(-1.0, 0.0, 0.0), 
+    float3( 1.0, 0.0, 0.0), float3( 1.0, 0.0, 0.0), float3( 1.0, 0.0, 0.0), float3( 1.0, 0.0, 0.0), 
+    float3( 0.0,-1.0, 0.0), float3( 0.0,-1.0, 0.0), float3( 0.0,-1.0, 0.0), float3( 0.0,-1.0, 0.0), 
+    float3( 0.0, 1.0, 0.0), float3( 0.0, 1.0, 0.0), float3( 0.0, 1.0, 0.0), float3( 0.0, 1.0, 0.0), 
+    float3( 0.0, 0.0,-1.0), float3( 0.0, 0.0,-1.0), float3( 0.0, 0.0,-1.0), float3( 0.0, 0.0,-1.0),
+    float3( 0.0, 0.0, 1.0), float3( 0.0, 0.0, 1.0), float3( 0.0, 0.0, 1.0), float3( 0.0, 0.0, 1.0)
 
+};
+static const int triArray[36] = {
+        0, 1, 2, 0, 2, 3,
+        4, 5, 6, 4, 6, 7,
+        8, 9, 10, 8, 10, 11,
+        12, 13, 14, 12, 14, 15,
+        16, 17, 18, 16, 18, 19,
+        20, 21, 22, 20, 22, 23
+};
 
 [numthreads(8,8,8)]
 void ComputeMesh (uint3 id : SV_DispatchThreadID)
 {
-    int v = Voxels[id.xyz];
+    int index = 0;
 
-    if (v == 1) {
-        Connections adj;
-        adj.nx=1;
-        adj.px=1;
-        adj.ny=1;
-        adj.py=1;
-        adj.nz=1;
-        adj.pz=1;
-
-        if (id.x > 0) {
-           adj.nx = 1-Voxels[id.xyz + uint3(-1, 0, 0)]; 
-        }
-        if (id.x < Size-1) {
-           adj.px = 1-Voxels[id.xyz + uint3( 1, 0, 0)]; 
-        }
-        if (id.y > 0) {
-           adj.ny = 1-Voxels[id.xyz + uint3( 0,-1, 0)]; 
-        }
-        if (id.y < Size-1) {
-           adj.py = 1-Voxels[id.xyz + uint3( 0, 1, 0)]; 
-        }
-        if (id.z > 0) {
-           adj.nz = 1-Voxels[id.xyz + uint3( 0, 0,-1)]; 
-        }
-        if (id.z < Size-1) {
-           adj.pz = 1-Voxels[id.xyz + uint3( 0, 0, 1)]; 
-        }
-
+    for (int v = 0; v < 24; v++) {
+        Vertices[v] = vertArray[v];
+        Normals[v] = normArray[v];
+        Colors[v] = float4(normArray[v], 1.0);
     }
+    for (int t=0; t<36; t++) {
+        Triangles[t] = triArray[t];
+    }
+
+    
+    //int v = Voxels[id.xyz];
+
+    //if (v == 1) {
+    //    Connections adj;
+    //    adj.nx=1;
+    //    adj.px=1;
+    //    adj.ny=1;
+    //    adj.py=1;
+    //    adj.nz=1;
+    //    adj.pz=1;
+
+    //    if (id.x > 0) {
+    //       adj.nx = 1-Voxels[id.xyz + uint3(-1, 0, 0)]; 
+    //    }
+    //    if (id.x < Size-1) {
+    //       adj.px = 1-Voxels[id.xyz + uint3( 1, 0, 0)]; 
+    //    }
+    //    if (id.y > 0) {
+    //       adj.ny = 1-Voxels[id.xyz + uint3( 0,-1, 0)]; 
+    //    }
+    //    if (id.y < Size-1) {
+    //       adj.py = 1-Voxels[id.xyz + uint3( 0, 1, 0)]; 
+    //    }
+    //    if (id.z > 0) {
+    //       adj.nz = 1-Voxels[id.xyz + uint3( 0, 0,-1)]; 
+    //    }
+    //    if (id.z < Size-1) {
+    //       adj.pz = 1-Voxels[id.xyz + uint3( 0, 0, 1)]; 
+    //    }
+
+    //}
 }

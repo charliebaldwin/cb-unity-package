@@ -15,10 +15,13 @@ public class VoxelMesherCompute : MonoBehaviour
     };
 
     public RenderTexture voxelTex;
+    public RenderTexture testTex;
 
     public Vector3 NoiseTranslate = Vector3.zero;
     public float NoiseScale = 0.1f;
     public float NoiseThreshold = 0.5f;
+
+    public ComputeShader Compute;
 
     //public int[,,] voxels = new int[3, 3, 3]{
     //    {
@@ -44,7 +47,8 @@ public class VoxelMesherCompute : MonoBehaviour
 
     private void Start()
     {
-
+        VoxelNoise(Compute);
+        GenerateMeshCompute(Compute);
     }
 
     private void Update()
@@ -57,7 +61,7 @@ public class VoxelMesherCompute : MonoBehaviour
     {
         NoiseTranslate.x = transform.position.x / Size; // + 3f * Mathf.Sin(0.4f * Time.time);
         NoiseTranslate.z = transform.position.z / Size; // + 3f * Mathf.Cos(0.4f * Time.time);
-        voxels = VoxelNoise();
+        //VoxelNoise(Compute);
 
         meshFilter = GetComponent<MeshFilter>();
         mesh = meshFilter.sharedMesh;
@@ -154,14 +158,67 @@ public class VoxelMesherCompute : MonoBehaviour
 
     private void VoxelNoise(ComputeShader compute)
     {
-        voxelTex = new RenderTexture(Size, Size, Size, RenderTextureFormat.R8);
-        voxelTex.dimension = TextureDimension.Tex3D;
-        voxelTex.enableRandomWrite = true;
 
         int kernel = compute.FindKernel("GenerateGrid");
 
+        voxelTex.Release();
+
+        voxelTex.height = Size;
+        voxelTex.width = Size;
+        voxelTex.volumeDepth = Size;
+
+        voxelTex.Create();
+
+
         compute.SetTexture(kernel, "Voxels", voxelTex);
-        compute.Dispatch(kernel, Size / 8, Size / 8, Size / 8);
+        compute.SetFloat("Scale", 0.1f);
+        compute.SetFloat("Size", Size);
+        compute.SetFloat("Threshold", 0.2f);
+        compute.Dispatch(kernel, Size, Size, Size);
+
+    }
+
+    private void GenerateMeshCompute(ComputeShader compute)
+    {
+
+        int kernel = compute.FindKernel("ComputeMesh");
+        ComputeBuffer vBuffer = new ComputeBuffer(24 * 1, 3 * sizeof(float));
+        ComputeBuffer nBuffer = new ComputeBuffer(24 * 1, 3 * sizeof(float));
+        ComputeBuffer cBuffer = new ComputeBuffer(24 * 1, 4 * sizeof(float));
+        ComputeBuffer tBuffer = new ComputeBuffer(36 * 1, sizeof(int));
+        compute.SetBuffer(kernel, "Vertices", vBuffer);
+        compute.SetBuffer(kernel, "Normals", nBuffer);
+        compute.SetBuffer(kernel, "Colors", cBuffer);
+        compute.SetBuffer(kernel, "Triangles", tBuffer);
+
+        compute.Dispatch(kernel, 3, 3, 3);
+
+        Vector3[] vData = new Vector3[24 * 1];
+        Vector3[] nData = new Vector3[24 * 1];
+        Color[] cData = new Color[24 * 1];
+        int[] tData = new int[36 * 1];
+
+        vBuffer.GetData(vData);
+        nBuffer.GetData(nData);
+        cBuffer.GetData(cData);
+        tBuffer.GetData(tData);
+
+        vBuffer.Release();
+        nBuffer.Release();
+        cBuffer.Release();
+        tBuffer.Release();  
+
+        meshFilter = GetComponent<MeshFilter>();
+        mesh = meshFilter.sharedMesh;
+        mesh.Clear();
+        mesh.vertices = vData;
+        mesh.normals = nData;
+        mesh.colors = cData;
+        mesh.triangles = tData;
+
+
+
+
 
     }
 
