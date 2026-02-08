@@ -4,15 +4,16 @@
 #include "Packages/jp.keijiro.noiseshader/Shader/SimplexNoise3D.hlsl"
 
 RWTexture3D<float4> Voxels;
-float Size;
+int Size;
 float Scale;
 float Threshold;
+float3 TranslateNoise;
 
 [numthreads(8,8,8)]
 void GenerateGrid (uint3 id : SV_DispatchThreadID)
 {
 
-    float n = SimplexNoise(float3(id.x, id.y, id.z) * Scale) > Threshold ? 1.0 : 0.0;
+    float n = SimplexNoise(float3(id.x, id.y, id.z) * Scale + TranslateNoise) > Threshold ? 1.0 : 0.0;
     Voxels[id.xyz] = float4(n, n, n, 1.0);
 
     // Result[id.xy] = float4(id.x & id.y, (id.x & 15)/15.0, (id.y & 15)/15.0, 0.0);
@@ -24,7 +25,7 @@ void GenerateGrid (uint3 id : SV_DispatchThreadID)
 RWStructuredBuffer<float3> Vertices;
 RWStructuredBuffer<float3> Normals;
 RWStructuredBuffer<float4> Colors;
-RWStructuredBuffer<int> Triangles;
+//RWStructuredBuffer<int> Triangles;
 
 
 //struct Connections {
@@ -63,16 +64,27 @@ static const int triArray[36] = {
 [numthreads(8,8,8)]
 void ComputeMesh (uint3 id : SV_DispatchThreadID)
 {
-    int index = 0;
+    int idx = id.x % Size;
+    int idy = id.y % Size;
+    int idz = id.z % Size;
+    int index = 24*(idy + Size * idx + Size * Size * idz);
 
-    for (int v = 0; v < 24; v++) {
-        Vertices[v] = vertArray[v];
-        Normals[v] = normArray[v];
-        Colors[v] = float4(normArray[v], 1.0);
+    float voxel = Voxels[id.xyz].x;
+
+    if (voxel > 0.2) {
+        for (int v = 0; v < 24; v++) {
+            float3 vert = vertArray[v];
+            Vertices[v + index] = float3(vert.x + idx, vert.y + idy, vert.z + idz);
+            Normals[v + index] = normArray[v];
+            Colors[v + index] = float4(0.0, 1.0, 0.0, 1.0);
+        }
     }
-    for (int t=0; t<36; t++) {
-        Triangles[t] = triArray[t];
-    }
+
+    
+
+   // for (int t=0; t<36; t++) {
+   //     Triangles[t] = triArray[t];
+   // }
 
     
     //int v = Voxels[id.xyz];

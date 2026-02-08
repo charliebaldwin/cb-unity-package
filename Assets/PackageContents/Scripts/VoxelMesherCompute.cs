@@ -23,18 +23,6 @@ public class VoxelMesherCompute : MonoBehaviour
 
     public ComputeShader Compute;
 
-    //public int[,,] voxels = new int[3, 3, 3]{
-    //    {
-    //        {0,0,0}, {0,0,0}, {0,0,0}
-    //    },
-    //    {
-    //        {0,0,0}, {0,1,0}, {0,0,0}
-    //    },
-    //    {
-    //        {0,0,0}, {0,0,0}, {0,0,0}
-    //    }
-    //};
-
 
     private MeshFilter meshFilter;
     private Mesh mesh;
@@ -47,69 +35,18 @@ public class VoxelMesherCompute : MonoBehaviour
 
     private void Start()
     {
-        VoxelNoise(Compute);
-        GenerateMeshCompute(Compute);
+
     }
 
     private void Update()
     {
-
+        VoxelNoise(Compute);
     }
-
-    [Button]
-    private void GenerateMesh()
+    private void LateUpdate()
     {
-        NoiseTranslate.x = transform.position.x / Size; // + 3f * Mathf.Sin(0.4f * Time.time);
-        NoiseTranslate.z = transform.position.z / Size; // + 3f * Mathf.Cos(0.4f * Time.time);
-        //VoxelNoise(Compute);
+        GenerateMeshCompute(Compute);
 
-        meshFilter = GetComponent<MeshFilter>();
-        mesh = meshFilter.sharedMesh;
-        mesh.Clear();
-
-        int currentIndex = 0;
-
-        for (int x = 0; x < Size; x++) {
-            for (int y = 0; y < Size; y++) {
-                for (int z = 0; z < Size; z++) {
-                    
-                    if (voxels[x, y, z] == 1)
-                    {
-                        Connections adj = CheckConnections(x, y, z);
-
-                        if (adj.SumFaces() > 0)
-                        {
-                            Vector3 p = new Vector3(x, y, z);
-
-                            Vector3[] newVerts = GenerateCubeVerticesSplit(p, 1f, adj);
-                            Vector3[] oldVerts = mesh.vertices;
-                            Vector3[] combinedVerts = oldVerts.Concat(newVerts).ToArray();
-
-                            Vector3[] newNorms = GenerateCubeNormalsSplit(adj);
-                            Vector3[] oldNorms = mesh.normals;
-                            Vector3[] combinedNorms = oldNorms.Concat(newNorms).ToArray();
-
-                            int[] newTris = GenerateCubeIndicesSplit(currentIndex, adj);
-                            int[] oldTris = mesh.triangles;
-                            int[] combinedTris = oldTris.Concat(newTris).ToArray();
-
-                            currentIndex += 4 * adj.SumFaces();
-
-                            mesh.vertices = combinedVerts;
-                            mesh.triangles = combinedTris;
-                            mesh.normals = combinedNorms;
-                            mesh.colors = VecArrayToColor(combinedNorms);
-
-                           // Debug.Log($"voxel ({x},{y},{z}): {newVerts.Length}v, {newNorms.Length}n, {newTris.Length}t");
-                        }
-                    }
-
-                }
-            }
-        }
     }
-
-
 
     private Connections CheckConnections(int x, int y, int z) {
         Connections adj = new Connections();
@@ -171,7 +108,8 @@ public class VoxelMesherCompute : MonoBehaviour
 
 
         compute.SetTexture(kernel, "Voxels", voxelTex);
-        compute.SetFloat("Scale", 0.1f);
+        compute.SetVector("TranslateNoise", NoiseTranslate);
+        compute.SetFloat("Scale", NoiseScale);
         compute.SetFloat("Size", Size);
         compute.SetFloat("Threshold", 0.2f);
         compute.Dispatch(kernel, Size, Size, Size);
@@ -180,46 +118,65 @@ public class VoxelMesherCompute : MonoBehaviour
 
     private void GenerateMeshCompute(ComputeShader compute)
     {
+        int size3d = Size * Size * Size;
 
         int kernel = compute.FindKernel("ComputeMesh");
-        ComputeBuffer vBuffer = new ComputeBuffer(24 * 1, 3 * sizeof(float));
-        ComputeBuffer nBuffer = new ComputeBuffer(24 * 1, 3 * sizeof(float));
-        ComputeBuffer cBuffer = new ComputeBuffer(24 * 1, 4 * sizeof(float));
-        ComputeBuffer tBuffer = new ComputeBuffer(36 * 1, sizeof(int));
+        ComputeBuffer vBuffer = new ComputeBuffer(24 * size3d, 3 * sizeof(float));
+        ComputeBuffer nBuffer = new ComputeBuffer(24 * size3d, 3 * sizeof(float));
+        ComputeBuffer cBuffer = new ComputeBuffer(24 * size3d, 4 * sizeof(float));
+       // ComputeBuffer tBuffer = new ComputeBuffer(36 * 1, sizeof(int));
+        
         compute.SetBuffer(kernel, "Vertices", vBuffer);
         compute.SetBuffer(kernel, "Normals", nBuffer);
         compute.SetBuffer(kernel, "Colors", cBuffer);
-        compute.SetBuffer(kernel, "Triangles", tBuffer);
+        //compute.SetBuffer(kernel, "Triangles", tBuffer);
 
-        compute.Dispatch(kernel, 3, 3, 3);
+        compute.SetInt("Size", Size);
+        compute.SetTexture(kernel, "Voxels", voxelTex);
 
-        Vector3[] vData = new Vector3[24 * 1];
-        Vector3[] nData = new Vector3[24 * 1];
-        Color[] cData = new Color[24 * 1];
-        int[] tData = new int[36 * 1];
+        compute.Dispatch(kernel, Size, Size, Size);
+
+        Vector3[] vData = new Vector3[24 * size3d];
+        Vector3[] nData = new Vector3[24 * size3d];
+        Color[] cData = new Color[24 * size3d];
+        //int[] tData = new int[36 * 1];
 
         vBuffer.GetData(vData);
         nBuffer.GetData(nData);
         cBuffer.GetData(cData);
-        tBuffer.GetData(tData);
+       // tBuffer.GetData(tData);
 
         vBuffer.Release();
         nBuffer.Release();
         cBuffer.Release();
-        tBuffer.Release();  
+       // tBuffer.Release();  
 
         meshFilter = GetComponent<MeshFilter>();
-        mesh = meshFilter.sharedMesh;
+        meshFilter.sharedMesh = null;
+        mesh = new Mesh();
         mesh.Clear();
         mesh.vertices = vData;
         mesh.normals = nData;
         mesh.colors = cData;
-        mesh.triangles = tData;
+        mesh.triangles = GenerateIndices(vData.Length);
+        mesh.RecalculateBounds();
+        meshFilter.sharedMesh = mesh;
 
+    }
 
-
-
-
+    private int[] GenerateIndices(int vertexCount)
+    {
+        int[] result = new int[(vertexCount / 4) * 6];
+        for (int i=0; i < vertexCount/4; i++)
+        {
+            result[i * 6 + 0] = i * 4 + 0;
+            result[i * 6 + 1] = i * 4 + 1;
+            result[i * 6 + 2] = i * 4 + 2;
+            result[i * 6 + 3] = i * 4 + 0;
+            result[i * 6 + 4] = i * 4 + 2;
+            result[i * 6 + 5] = i * 4 + 3;
+        }
+        return result;
     }
 
     private Vector3[] GenerateCubeVertices(Vector3 center, float size)
