@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -8,11 +9,9 @@ using static Perlin;
 public class VoxelMesherCompute : MonoBehaviour
 {
     public int Size = 3;
-    public int[,,] voxels = new int[3, 3, 3]{
-        { {1,1,1}, {0,1,0}, {0,0,0} },
-        { {1,1,1}, {1,1,1}, {0,1,0} },
-        { {1,1,1}, {0,1,0}, {0,0,0} }
-    };
+    ComputeBuffer cBuffer;
+    ComputeBuffer vBuffer;
+    ComputeBuffer nBuffer;
 
     public RenderTexture voxelTex;
     public RenderTexture testTex;
@@ -35,63 +34,28 @@ public class VoxelMesherCompute : MonoBehaviour
 
     private void Start()
     {
-
+        int size3d = Size * Size * Size;
+        vBuffer = new ComputeBuffer(24 * size3d, 3 * sizeof(float));
+        nBuffer = new ComputeBuffer(24 * size3d, 3 * sizeof(float));
+        cBuffer = new ComputeBuffer(24 * size3d, 4 * sizeof(float));
     }
 
     private void Update()
     {
         VoxelNoise(Compute);
+
+
+        int size3d = Size * Size * Size;
+        vBuffer = new ComputeBuffer(24 * size3d, 3 * sizeof(float));
+        nBuffer = new ComputeBuffer(24 * size3d, 3 * sizeof(float));
+        cBuffer = new ComputeBuffer(24 * size3d, 4 * sizeof(float));
     }
     private void LateUpdate()
     {
         GenerateMeshCompute(Compute);
-
+        
     }
 
-    private Connections CheckConnections(int x, int y, int z) {
-        Connections adj = new Connections();
-
-        // -X
-        if (x > 0) {
-            adj.nx = 1-voxels[x - 1, y, z];
-        } else {
-            adj.nx = 1;
-        }
-        // +X
-        if (x < Size-1) {
-            adj.px = 1 - voxels[x + 1, y, z];
-        } else {
-            adj.px = 1;
-        }
-
-        // -Y
-        if (y > 0) {
-            adj.ny = 1 - voxels[x, y - 1, z];
-        } else {
-            adj.ny = 1;
-        }
-        // +Y
-        if (y < Size-1) {
-            adj.py = 1 - voxels[x, y + 1, z];
-        } else {
-            adj.py = 1;
-        }
-
-       // -Z
-        if (z > 0) {
-            adj.nz = 1 - voxels[x, y, z - 1];
-        } else {
-            adj.nz = 1;
-        }
-        // +Z
-        if (z < Size-1) {
-            adj.pz = 1 - voxels[x, y, z + 1];
-        } else {
-            adj.pz = 1;
-        }
-
-        return adj;
-    }
 
     private void VoxelNoise(ComputeShader compute)
     {
@@ -108,7 +72,7 @@ public class VoxelMesherCompute : MonoBehaviour
 
 
         compute.SetTexture(kernel, "Voxels", voxelTex);
-        compute.SetVector("TranslateNoise", NoiseTranslate);
+        compute.SetVector("TranslateNoise", transform.position * NoiseScale);
         compute.SetFloat("Scale", NoiseScale);
         compute.SetFloat("Size", Size);
         compute.SetFloat("Threshold", 0.2f);
@@ -119,18 +83,11 @@ public class VoxelMesherCompute : MonoBehaviour
     private void GenerateMeshCompute(ComputeShader compute)
     {
         int size3d = Size * Size * Size;
-
         int kernel = compute.FindKernel("ComputeMesh");
-        ComputeBuffer vBuffer = new ComputeBuffer(24 * size3d, 3 * sizeof(float));
-        ComputeBuffer nBuffer = new ComputeBuffer(24 * size3d, 3 * sizeof(float));
-        ComputeBuffer cBuffer = new ComputeBuffer(24 * size3d, 4 * sizeof(float));
-       // ComputeBuffer tBuffer = new ComputeBuffer(36 * 1, sizeof(int));
-        
+
         compute.SetBuffer(kernel, "Vertices", vBuffer);
         compute.SetBuffer(kernel, "Normals", nBuffer);
         compute.SetBuffer(kernel, "Colors", cBuffer);
-        //compute.SetBuffer(kernel, "Triangles", tBuffer);
-
         compute.SetInt("Size", Size);
         compute.SetTexture(kernel, "Voxels", voxelTex);
 
@@ -139,17 +96,14 @@ public class VoxelMesherCompute : MonoBehaviour
         Vector3[] vData = new Vector3[24 * size3d];
         Vector3[] nData = new Vector3[24 * size3d];
         Color[] cData = new Color[24 * size3d];
-        //int[] tData = new int[36 * 1];
-
+ 
         vBuffer.GetData(vData);
         nBuffer.GetData(nData);
         cBuffer.GetData(cData);
-       // tBuffer.GetData(tData);
 
-        vBuffer.Release();
-        nBuffer.Release();
-        cBuffer.Release();
-       // tBuffer.Release();  
+        vData = TrimArrayVec3(vData);
+        nData = TrimArrayVec3(nData);
+        cData = TrimArrayColor(cData);
 
         meshFilter = GetComponent<MeshFilter>();
         meshFilter.sharedMesh = null;
@@ -162,6 +116,33 @@ public class VoxelMesherCompute : MonoBehaviour
         mesh.RecalculateBounds();
         meshFilter.sharedMesh = mesh;
 
+        Debug.Log($"vData length: {vData.Length}");
+
+    }
+
+    private Vector3[] TrimArrayVec3(Vector3[] array)
+    {
+        List<Vector3> trimmedList = new List<Vector3>();
+        for (int i = 0; i < array.Length; i++)
+        {
+            if (array[i] != null && array[i] != Vector3.zero)
+            {
+                trimmedList.Add(array[i]);
+            }
+        }
+        return trimmedList.ToArray();
+    }
+    private Color[] TrimArrayColor(Color[] array)
+    {
+        List<Color> trimmedList = new List<Color>();
+        for (int i = 0; i < array.Length; i++)
+        {
+            if (array[i] != null && array[i].a != 0.0f)
+            {
+                trimmedList.Add(array[i]);
+            }
+        }
+        return trimmedList.ToArray();
     }
 
     private int[] GenerateIndices(int vertexCount)

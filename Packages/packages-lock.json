@@ -212,9 +212,9 @@
       "url": "https://packages.unity.com"
     },
     "jp.keijiro.noiseshader": {
-      "version": "file:C:/Users/Charlie/Downloads/NoiseShader-master/NoiseShader-master/Packages/jp.keijiro.noiseshader",
+      "version": "file:jp.keijiro.noiseshader",
       "depth": 0,
-      "source": "local",
+      "source": "embedded",
       "dependencies": {}
     },
     "com.unity.modules.accessibility": {

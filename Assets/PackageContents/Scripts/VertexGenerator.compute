@@ -13,7 +13,7 @@ float3 TranslateNoise;
 void GenerateGrid (uint3 id : SV_DispatchThreadID)
 {
 
-    float n = SimplexNoise(float3(id.x, id.y, id.z) * Scale + TranslateNoise) > Threshold ? 1.0 : 0.0;
+    float n = SimplexNoise(float3(id.x, id.y, id.z) * Scale + TranslateNoise);
     Voxels[id.xyz] = float4(n, n, n, 1.0);
 
     // Result[id.xy] = float4(id.x & id.y, (id.x & 15)/15.0, (id.y & 15)/15.0, 0.0);
@@ -43,6 +43,13 @@ static const float3 vertArray[24] = {
       float3( 0.5, -0.5, -0.5), float3(-0.5, -0.5, -0.5), float3(-0.5,  0.5, -0.5), float3( 0.5,  0.5, -0.5),  
       float3(-0.5, -0.5,  0.5), float3( 0.5, -0.5,  0.5), float3( 0.5,  0.5,  0.5), float3(-0.5,  0.5,  0.5)
 };
+static const float3  faceVertsNX[4] = { float3(-0.5, -0.5,  0.5), float3(-0.5,  0.5,  0.5), float3(-0.5,  0.5, -0.5), float3(-0.5, -0.5, -0.5)};
+static const float3  faceVertsPX[4] = { float3( 0.5, -0.5,  0.5), float3( 0.5, -0.5, -0.5), float3( 0.5,  0.5, -0.5), float3( 0.5,  0.5,  0.5)};
+static const float3  faceVertsNY[4] = { float3( 0.5, -0.5, -0.5), float3( 0.5, -0.5,  0.5), float3(-0.5, -0.5,  0.5), float3(-0.5, -0.5, -0.5)};
+static const float3  faceVertsPY[4] = { float3( 0.5,  0.5,  0.5), float3( 0.5,  0.5, -0.5), float3(-0.5,  0.5, -0.5), float3(-0.5,  0.5,  0.5)};
+static const float3  faceVertsNZ[4] = { float3( 0.5, -0.5, -0.5), float3(-0.5, -0.5, -0.5), float3(-0.5,  0.5, -0.5), float3( 0.5,  0.5, -0.5)};
+static const float3  faceVertsPZ[4] = { float3(-0.5, -0.5,  0.5), float3( 0.5, -0.5,  0.5), float3( 0.5,  0.5,  0.5), float3(-0.5,  0.5,  0.5)};
+
 static const float3 normArray[24] =  {
     float3(-1.0, 0.0, 0.0), float3(-1.0, 0.0, 0.0), float3(-1.0, 0.0, 0.0), float3(-1.0, 0.0, 0.0), 
     float3( 1.0, 0.0, 0.0), float3( 1.0, 0.0, 0.0), float3( 1.0, 0.0, 0.0), float3( 1.0, 0.0, 0.0), 
@@ -52,16 +59,16 @@ static const float3 normArray[24] =  {
     float3( 0.0, 0.0, 1.0), float3( 0.0, 0.0, 1.0), float3( 0.0, 0.0, 1.0), float3( 0.0, 0.0, 1.0)
 
 };
-static const int triArray[36] = {
-        0, 1, 2, 0, 2, 3,
-        4, 5, 6, 4, 6, 7,
-        8, 9, 10, 8, 10, 11,
-        12, 13, 14, 12, 14, 15,
-        16, 17, 18, 16, 18, 19,
-        20, 21, 22, 20, 22, 23
-};
 
-[numthreads(8,8,8)]
+static const float3  faceNormNX[4] = { float3(-1.0, 0.0, 0.0), float3(-1.0, 0.0, 0.0), float3(-1.0, 0.0, 0.0), float3(-1.0, 0.0, 0.0) };
+static const float3  faceNormPX[4] = { float3( 1.0, 0.0, 0.0), float3( 1.0, 0.0, 0.0), float3( 1.0, 0.0, 0.0), float3( 1.0, 0.0, 0.0) };
+static const float3  faceNormNY[4] = { float3( 0.0,-1.0, 0.0), float3( 0.0,-1.0, 0.0), float3( 0.0,-1.0, 0.0), float3( 0.0,-1.0, 0.0) };
+static const float3  faceNormPY[4] = { float3( 0.0, 1.0, 0.0), float3( 0.0, 1.0, 0.0), float3( 0.0, 1.0, 0.0), float3( 0.0, 1.0, 0.0) };
+static const float3  faceNormNZ[4] = { float3( 0.0, 0.0,-1.0), float3( 0.0, 0.0,-1.0), float3( 0.0, 0.0,-1.0), float3( 0.0, 0.0,-1.0) };
+static const float3  faceNormPZ[4] = { float3( 0.0, 0.0, 1.0), float3( 0.0, 0.0, 1.0), float3( 0.0, 0.0, 1.0), float3( 0.0, 0.0, 1.0) };
+
+
+[numthreads(16,16,1)]
 void ComputeMesh (uint3 id : SV_DispatchThreadID)
 {
     int idx = id.x % Size;
@@ -71,14 +78,22 @@ void ComputeMesh (uint3 id : SV_DispatchThreadID)
 
     float voxel = Voxels[id.xyz].x;
 
-    if (voxel > 0.2) {
+    if (voxel >= 0.1) {
         for (int v = 0; v < 24; v++) {
             float3 vert = vertArray[v];
             Vertices[v + index] = float3(vert.x + idx, vert.y + idy, vert.z + idz);
             Normals[v + index] = normArray[v];
-            Colors[v + index] = float4(0.0, 1.0, 0.0, 1.0);
+            Colors[v + index] = float4(0.0, voxel, 0.0, 1.0);
         }
     }
+
+    //else if (voxel == 0.0) {
+    //    for (int v = 0; v < 24; v++) {
+    //        Vertices[v + index] = float3(0.0,0.0,0.0);
+    //        Normals[v + index] = float3(0.0,0.0,0.0);
+    //        Colors[v + index] = float4(0.0,0.0,0.0,0.0);
+    //    }
+    //}
 
     
 
