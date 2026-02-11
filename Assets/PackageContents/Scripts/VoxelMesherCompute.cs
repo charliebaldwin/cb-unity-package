@@ -9,6 +9,7 @@ using static Perlin;
 public class VoxelMesherCompute : MonoBehaviour
 {
     public int Size = 3;
+    public Vector3Int Size3D = new Vector3Int(16,32,16);
     ComputeBuffer cBuffer;
     ComputeBuffer vBuffer;
     ComputeBuffer nBuffer;
@@ -75,8 +76,9 @@ public class VoxelMesherCompute : MonoBehaviour
         compute.SetVector("TranslateNoise", transform.position * NoiseScale);
         compute.SetFloat("Scale", NoiseScale);
         compute.SetFloat("Size", Size);
+        compute.SetVector("Size3D", new Vector4(Size3D.x, Size3D.y, Size3D.z, 0.0f));
         compute.SetFloat("Threshold", 0.2f);
-        compute.Dispatch(kernel, Size, Size, Size);
+        compute.Dispatch(kernel, Size3D.x, 1, Size3D.z);
 
     }
 
@@ -89,9 +91,10 @@ public class VoxelMesherCompute : MonoBehaviour
         compute.SetBuffer(kernel, "Normals", nBuffer);
         compute.SetBuffer(kernel, "Colors", cBuffer);
         compute.SetInt("Size", Size);
+        compute.SetVector("Size3D", new Vector4(Size3D.x, Size3D.y, Size3D.z, 0.0f));
         compute.SetTexture(kernel, "Voxels", voxelTex);
 
-        compute.Dispatch(kernel, Size, Size, Size);
+        compute.Dispatch(kernel, Size3D.x, 1, Size3D.z);
 
         Vector3[] vData = new Vector3[24 * size3d];
         Vector3[] nData = new Vector3[24 * size3d];

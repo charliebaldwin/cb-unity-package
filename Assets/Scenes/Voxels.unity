@@ -236,10 +236,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Size: 10
+  Size3D: {x: 8, y: 16, z: 8}
   voxelTex: {fileID: 8400000, guid: 37d1f613d0a32f744b305f0404a43660, type: 2}
   testTex: {fileID: 8400000, guid: 872718f75ec035e409a6b0c753718bba, type: 2}
   NoiseTranslate: {x: 0, y: 0, z: 0}
-  NoiseScale: 1
+  NoiseScale: 0.1
   NoiseThreshold: 0.5
   Compute: {fileID: 7200000, guid: 562654af9f1c3b846bbfbc6a73588e80, type: 3}
 --- !u!1 &764297641

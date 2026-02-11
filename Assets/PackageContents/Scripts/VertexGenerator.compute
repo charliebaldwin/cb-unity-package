@@ -5,16 +5,20 @@
 
 RWTexture3D<float4> Voxels;
 int Size;
+uint3 Size3D;
 float Scale;
 float Threshold;
 float3 TranslateNoise;
 
-[numthreads(8,8,8)]
+[numthreads(16,1,16)]
 void GenerateGrid (uint3 id : SV_DispatchThreadID)
 {
+    for (int y=0; y<Size3D.y; y++) {
+        float3 pos = float3(id.x, y, id.z);
+        float n = SimplexNoise(pos * Scale + TranslateNoise);
+        Voxels[pos] = float4(n, n, n, 1.0);
+    }
 
-    float n = SimplexNoise(float3(id.x, id.y, id.z) * Scale + TranslateNoise);
-    Voxels[id.xyz] = float4(n, n, n, 1.0);
 
     // Result[id.xy] = float4(id.x & id.y, (id.x & 15)/15.0, (id.y & 15)/15.0, 0.0);
 }   
@@ -68,22 +72,25 @@ static const float3  faceNormNZ[4] = { float3( 0.0, 0.0,-1.0), float3( 0.0, 0.0,
 static const float3  faceNormPZ[4] = { float3( 0.0, 0.0, 1.0), float3( 0.0, 0.0, 1.0), float3( 0.0, 0.0, 1.0), float3( 0.0, 0.0, 1.0) };
 
 
-[numthreads(16,16,1)]
+[numthreads(16,1,16)]
 void ComputeMesh (uint3 id : SV_DispatchThreadID)
 {
-    int idx = id.x % Size;
-    int idy = id.y % Size;
-    int idz = id.z % Size;
-    int index = 24*(idy + Size * idx + Size * Size * idz);
+    for (int y=0; y<Size3D.y; y++) {
+        float3 pos = float3(id.x, y, id.z);
+        int idx = id.x % Size3D.x;
+        int idy = y;
+        int idz = id.z % Size3D.z;
+        int index = 24*(idy + Size3D.x * idx + Size3D.x * Size3D.x * idz);
 
-    float voxel = Voxels[id.xyz].x;
+        float voxel = Voxels[pos].x;
 
-    if (voxel >= 0.1) {
-        for (int v = 0; v < 24; v++) {
-            float3 vert = vertArray[v];
-            Vertices[v + index] = float3(vert.x + idx, vert.y + idy, vert.z + idz);
-            Normals[v + index] = normArray[v];
-            Colors[v + index] = float4(0.0, voxel, 0.0, 1.0);
+        if (voxel >= 0.0) {
+            for (int v = 0; v < 24; v++) {
+                float3 vert = vertArray[v];
+                Vertices[v + index] = float3(vert.x + idx, vert.y + idy, vert.z + idz);
+                Normals[v + index] = normArray[v];
+                Colors[v + index] = float4(pos.x / Size3D.x, pos.y / Size3D.y, pos.z / Size3D.z, 1.0);
+            }
         }
     }
 
