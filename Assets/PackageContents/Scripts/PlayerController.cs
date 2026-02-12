@@ -71,8 +71,14 @@ public class PlayerController : MonoBehaviour
         newMotion += walkInput.x * currentMoveSpeed * transform.right * Time.deltaTime;
         newMotion += walkInput.z * currentMoveSpeed * transform.forward * Time.deltaTime;
 
+
+        // FLYING
+        newMotion += walkInput.y * currentMoveSpeed * transform.up * Time.deltaTime;
+
         motion = Vector3.Lerp(motion, newMotion, grounded ? 1f : airborneControl);
-        motion.y = ComputeGravity();
+        //motion.y = ComputeGravity();
+
+
 
         charController.Move(Time.deltaTime * motion);
 
@@ -99,7 +105,8 @@ public class PlayerController : MonoBehaviour
     {
         float xInput = Input.GetAxis("Horizontal");
         float zInput = Input.GetAxis("Vertical");
-        Vector3 inputAxis = new Vector3(xInput, 0f, zInput);
+        float yInput = (Input.GetKey(KeyCode.Space) ? 1f : 0f) + (Input.GetKey(KeyCode.LeftControl) ? -1f : 0f);
+        Vector3 inputAxis = new Vector3(xInput, yInput, zInput);
 
         return Vector3.ClampMagnitude(inputAxis, 1f);
     }

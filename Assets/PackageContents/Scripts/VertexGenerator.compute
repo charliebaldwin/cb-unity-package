@@ -75,12 +75,12 @@ static const float3  faceNormPY = float3( 0.0, 1.0, 0.0);
 static const float3  faceNormNZ = float3( 0.0, 0.0,-1.0);
 static const float3  faceNormPZ = float3( 0.0, 0.0, 1.0);
 
-static const float2  faceTexNX[4] = { float2(0.0, 0.75), float2(0.25, 0.75), float2(0.25, 0.5), float2(0.0, 0.5)};
-static const float2  faceTexPX[4] = { float2(0.5, 0.75), float2(0.75, 0.75), float2(0.75, 0.5), float2(0.5, 0.5)};
-static const float2  faceTexNY[4] = { float2(0.25, 0.5), float2(0.5, 0.5), float2(0.5, 0.25), float2(0.25, 0.25)};
-static const float2  faceTexPY[4] = { float2(0.25, 1.0), float2(0.5, 1.0), float2(0.5, 0.75), float2(0.25, 0.75)};
-static const float2  faceTexNZ[4] = { float2(0.25, 0.75), float2(0.5, 0.75), float2(0.5, 0.5), float2(0.25, 0.5)};
-static const float2  faceTexPZ[4] = { float2(0.75, 0.75), float2(1.0, 0.75), float2(1.0, 0.5), float2(0.75, 0.5)};
+static const float2  faceTexNX[4] = { float2(0.001, 0.749), float2(0.249, 0.749), float2(0.249, 0.501), float2(0.001, 0.501)};
+static const float2  faceTexPX[4] = { float2(0.501, 0.749), float2(0.749, 0.749), float2(0.749, 0.501), float2(0.501, 0.501)};
+static const float2  faceTexNY[4] = { float2(0.251, 0.499), float2(0.499, 0.499), float2(0.499, 0.251), float2(0.251, 0.251)};
+static const float2  faceTexPY[4] = { float2(0.251, 0.999), float2(0.499, 0.999), float2(0.499, 0.751), float2(0.251, 0.751)};
+static const float2  faceTexNZ[4] = { float2(0.251, 0.749), float2(0.499, 0.749), float2(0.499, 0.501), float2(0.251, 0.501)};
+static const float2  faceTexPZ[4] = { float2(0.751, 0.749), float2(0.999, 0.749), float2(0.999, 0.501), float2(0.751, 0.501)};
 
 
 RWStructuredBuffer<float3> Vertices;
