@@ -13,6 +13,7 @@ public class VoxelMesherCompute : MonoBehaviour
     ComputeBuffer cBuffer;
     ComputeBuffer vBuffer;
     ComputeBuffer nBuffer;
+    ComputeBuffer tBuffer;
 
     public RenderTexture voxelTex;
     public RenderTexture testTex;
@@ -27,34 +28,49 @@ public class VoxelMesherCompute : MonoBehaviour
     private MeshFilter meshFilter;
     private Mesh mesh;
 
+    private Vector3 lastPos;
+    private float lastScale;
+    private float lastThresh;
+
     private void Awake()
     {
         meshFilter = GetComponent<MeshFilter>();
+        voxelTex = new RenderTexture(voxelTex);
+
+        lastPos = transform.position;
+        lastScale = NoiseScale;
+        lastThresh = NoiseThreshold;
     }
 
 
     private void Start()
     {
-        int size3d = Size * Size * Size;
-        vBuffer = new ComputeBuffer(24 * size3d, 3 * sizeof(float));
-        nBuffer = new ComputeBuffer(24 * size3d, 3 * sizeof(float));
-        cBuffer = new ComputeBuffer(24 * size3d, 4 * sizeof(float));
+        VoxelNoise(Compute);
+        GenerateMeshCompute(Compute);
+
     }
 
     private void Update()
     {
-        VoxelNoise(Compute);
+        Size3D.y = Mathf.Clamp(Size3D.y, 4, 32);
 
+        if (transform.position != lastPos || NoiseScale != lastScale || lastThresh != NoiseThreshold)
+        {
+            lastPos = transform.position;
+            lastScale = NoiseScale;
+            lastThresh = NoiseThreshold;
 
-        int size3d = Size * Size * Size;
-        vBuffer = new ComputeBuffer(24 * size3d, 3 * sizeof(float));
-        nBuffer = new ComputeBuffer(24 * size3d, 3 * sizeof(float));
-        cBuffer = new ComputeBuffer(24 * size3d, 4 * sizeof(float));
+            VoxelNoise(Compute);
+            GenerateMeshCompute(Compute);
+        }
+        
+
     }
     private void LateUpdate()
     {
-        GenerateMeshCompute(Compute);
-        
+        //vBuffer.Release();
+        //nBuffer.Release();
+        //cBuffer.Release();
     }
 
 
@@ -85,12 +101,19 @@ public class VoxelMesherCompute : MonoBehaviour
     private void GenerateMeshCompute(ComputeShader compute)
     {
         int size3d = Size * Size * Size;
+        vBuffer = new ComputeBuffer(24 * size3d, 3 * sizeof(float));
+        nBuffer = new ComputeBuffer(24 * size3d, 3 * sizeof(float));
+        cBuffer = new ComputeBuffer(24 * size3d, 4 * sizeof(float));
+        tBuffer = new ComputeBuffer(24 * size3d, 2 * sizeof(float));
+
         int kernel = compute.FindKernel("ComputeMesh");
 
         compute.SetBuffer(kernel, "Vertices", vBuffer);
         compute.SetBuffer(kernel, "Normals", nBuffer);
         compute.SetBuffer(kernel, "Colors", cBuffer);
+        compute.SetBuffer(kernel, "TexCoords", tBuffer);
         compute.SetInt("Size", Size);
+        compute.SetFloat("Threshold", NoiseThreshold);
         compute.SetVector("Size3D", new Vector4(Size3D.x, Size3D.y, Size3D.z, 0.0f));
         compute.SetTexture(kernel, "Voxels", voxelTex);
 
@@ -99,27 +122,30 @@ public class VoxelMesherCompute : MonoBehaviour
         Vector3[] vData = new Vector3[24 * size3d];
         Vector3[] nData = new Vector3[24 * size3d];
         Color[] cData = new Color[24 * size3d];
+        Vector2[] tData = new Vector2[24 * size3d];
  
         vBuffer.GetData(vData);
         nBuffer.GetData(nData);
         cBuffer.GetData(cData);
+        tBuffer.GetData(tData);
 
-        vData = TrimArrayVec3(vData);
-        nData = TrimArrayVec3(nData);
-        cData = TrimArrayColor(cData);
+       // vData = TrimArrayVec3(vData);
+       // nData = TrimArrayVec3(nData);
+       // cData = TrimArrayColor(cData);
 
         meshFilter = GetComponent<MeshFilter>();
         meshFilter.sharedMesh = null;
         mesh = new Mesh();
         mesh.Clear();
         mesh.vertices = vData;
+        mesh.uv = tData;
         mesh.normals = nData;
         mesh.colors = cData;
         mesh.triangles = GenerateIndices(vData.Length);
         mesh.RecalculateBounds();
         meshFilter.sharedMesh = mesh;
 
-        Debug.Log($"vData length: {vData.Length}");
+        //Debug.Log($"vData length: {vData.Length}");
 
     }
 
