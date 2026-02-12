@@ -5,6 +5,7 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using VInspector;
 using static Perlin;
+using static UnityEditor.PlayerSettings;
 
 public class VoxelMesherCompute : MonoBehaviour
 {
@@ -14,9 +15,12 @@ public class VoxelMesherCompute : MonoBehaviour
     ComputeBuffer vBuffer;
     ComputeBuffer nBuffer;
     ComputeBuffer tBuffer;
+    ComputeBuffer voxelBuffer;
 
     public RenderTexture voxelTex;
     public RenderTexture testTex;
+
+    public int[,,] voxelData;
 
     public Vector3 NoiseTranslate = Vector3.zero;
     public float NoiseScale = 0.1f;
@@ -27,22 +31,28 @@ public class VoxelMesherCompute : MonoBehaviour
 
     private MeshFilter meshFilter;
     private Mesh mesh;
+    private BoxCollider boxCollider;
 
     private Vector3 lastPos;
     private float lastScale;
     private float lastThresh;
+    private Vector3Int lastSize;
 
-    private Vector3 tempOrigin;
-    private Vector3 tempDirection;
+    private Vector3 tempOrigin = Vector3.zero;
+    private Vector3 tempDirection = Vector3.forward;
+    private List<Vector4> tempCubes = new List<Vector4>();
+
 
     private void Awake()
     {
         meshFilter = GetComponent<MeshFilter>();
+        boxCollider = GetComponent<BoxCollider>();
         voxelTex = new RenderTexture(voxelTex);
 
         lastPos = transform.position;
         lastScale = NoiseScale;
         lastThresh = NoiseThreshold;
+        lastSize = Size3D;
     }
 
 
@@ -55,21 +65,57 @@ public class VoxelMesherCompute : MonoBehaviour
 
     private void OnDrawGizmos()
     {
-        Gizmos.DrawRay(tempOrigin, 100f*    tempDirection);
+        Gizmos.color = Color.green;
+        for (int x = 0; x < Size3D.x; x++)
+        {
+            for (int y = 0; y < Size3D.y; y++)
+            {
+                for (int z = 0; z < Size3D.z; z++)
+                {
+                    if (voxelData[x, y, z] == 1)
+                    {
+                       // Gizmos.DrawCube(transform.position + new Vector3(x, y, z), Vector3.one);
+                    }
+                }
+            }
+        }
+
+        Gizmos.color = Color.white;
+        Gizmos.DrawRay(tempOrigin, 100f * tempDirection);
+        foreach (Vector4 v in tempCubes)
+        {
+            if (v.w == 1.0f)
+            {
+                Gizmos.color = Color.red;
+                Gizmos.DrawCube(new Vector3(v.x, v.y, v.z), Vector3.one);
+            }
+            else
+            {
+                Gizmos.color = Color.white;
+            }
+           // Gizmos.DrawCube(new Vector3(v.x, v.y, v.z), Vector3.one);
+        }
+        Gizmos.color = Color.blue;
+        Gizmos.DrawSphere(tempOrigin, 0.5f);
+
     }
 
     private void Update()
     {
-        Size3D.y = Mathf.Clamp(Size3D.y, 4, 32);
+        Size3D.y = Mathf.Clamp(Size3D.y, 1, 32);
 
-        if (transform.position != lastPos || NoiseScale != lastScale || lastThresh != NoiseThreshold)
+        if (transform.position != lastPos || NoiseScale != lastScale || lastThresh != NoiseThreshold || lastSize != Size3D)
         {
             lastPos = transform.position;
             lastScale = NoiseScale;
             lastThresh = NoiseThreshold;
+            lastSize = Size3D;
 
             VoxelNoise(Compute);
             GenerateMeshCompute(Compute);
+
+            boxCollider.size = new Vector3(Size3D.x, Size3D.y, Size3D.z);
+            boxCollider.center = boxCollider.size * 0.5f - new Vector3(0.5f,0.5f,0.5f);
         }
         
 
@@ -79,6 +125,7 @@ public class VoxelMesherCompute : MonoBehaviour
         //vBuffer.Release();
         //nBuffer.Release();
         //cBuffer.Release();
+
     }
 
 
@@ -95,8 +142,11 @@ public class VoxelMesherCompute : MonoBehaviour
 
         voxelTex.Create();
 
+        voxelBuffer = new ComputeBuffer(Size3D.x * Size3D.y * Size3D.z, sizeof(int));
 
-        compute.SetTexture(kernel, "Voxels", voxelTex);
+
+        compute.SetTexture(kernel, "VoxelTex", voxelTex);
+        compute.SetBuffer(kernel, "Voxels", voxelBuffer);
         compute.SetVector("TranslateNoise", transform.position * NoiseScale);
         compute.SetFloat("Scale", NoiseScale);
         compute.SetFloat("Size", Size);
@@ -104,11 +154,20 @@ public class VoxelMesherCompute : MonoBehaviour
         compute.SetFloat("Threshold", 0.2f);
         compute.Dispatch(kernel, Size3D.x, 1, Size3D.z);
 
+        int[] vData = new int[Size3D.x * Size3D.y * Size3D.z];
+        voxelBuffer.GetData(vData);
+        voxelData = FlatTo3DArray(vData);
+
+        //for (int y = 0; y < Size3D.y; y++)
+        //{
+        //    Debug.Log($"y:{y} = {voxelData[0, y, 0]}");
+        //}
+
     }
 
     private void GenerateMeshCompute(ComputeShader compute)
     {
-        int size3d = Size * Size * Size;
+        int size3d = Size3D.x * Size3D.y * Size3D.z;
         vBuffer = new ComputeBuffer(24 * size3d, 3 * sizeof(float));
         nBuffer = new ComputeBuffer(24 * size3d, 3 * sizeof(float));
         cBuffer = new ComputeBuffer(24 * size3d, 4 * sizeof(float));
@@ -120,10 +179,11 @@ public class VoxelMesherCompute : MonoBehaviour
         compute.SetBuffer(kernel, "Normals", nBuffer);
         compute.SetBuffer(kernel, "Colors", cBuffer);
         compute.SetBuffer(kernel, "TexCoords", tBuffer);
+        compute.SetBuffer(kernel, "Voxels", voxelBuffer);
         compute.SetInt("Size", Size);
         compute.SetFloat("Threshold", NoiseThreshold);
         compute.SetVector("Size3D", new Vector4(Size3D.x, Size3D.y, Size3D.z, 0.0f));
-        compute.SetTexture(kernel, "Voxels", voxelTex);
+        compute.SetTexture(kernel, "VoxelTex", voxelTex);
 
         compute.Dispatch(kernel, Size3D.x, 1, Size3D.z);
 
@@ -197,23 +257,73 @@ public class VoxelMesherCompute : MonoBehaviour
         return result;
     }
 
-    public void VoxelRaycast(Vector3 origin, Vector3 direction)
+    private int[,,] TextureToArray(RenderTexture rt)
     {
-        tempOrigin = origin;
-        tempDirection = direction;
-
-        Texture3D tex = new Texture3D(Size3D.x, Size3D.y, Size3D.z, UnityEngine.Experimental.Rendering.DefaultFormat.LDR, 0, voxelTex.GetNativeTexturePtr().ToInt32());
-
-        for (int x = 0; x < Size3D.x; x++)
+        int[,,] result = new int[Size3D.x, Size3D.y, Size3D.z];
+        Texture3D tex3D = new Texture3D(Size3D.x, Size3D.y, Size3D.z, TextureFormat.ARGB32, true);
+        tex3D.CopyPixels(rt);
+        Color[] pixels = tex3D.GetPixels(0);
+        for(int x=0; x < Size3D.x; x++)
         {
-            for(int y = 0; y < Size3D.y; y++)
+            for (int y=0; y < Size3D.y; y++)
             {
-                for (int z = 0; z < Size3D.z; z++)
+                for (int z=0; z < Size3D.z; z++)
                 {
-                   // Debug.Log(tex.GetPixel(x, y, z));
+                    result[x, y, z] = pixels[x + Size3D.x * y + Size3D.x * Size3D.y * z].r > NoiseThreshold ? 1 : 0;
                 }
             }
         }
+        return result;
+    }
+    private int[,,] FlatTo3DArray(int[] flat)
+    {
+        int[,,] result = new int[Size3D.x, Size3D.y, Size3D.z];
+        for (int x = 0; x < Size3D.x; x++)
+        {
+            for (int y = 0; y < Size3D.y; y++)
+            {
+                for (int z = 0; z < Size3D.z; z++)
+                {
+                    result[x, y, z] = flat[x + Size3D.x * y + Size3D.x * Size3D.y * z];
+                }
+            }
+        }
+        return result;
+    }
+
+    public Vector3 VoxelRaycast(Vector3 origin, Vector3 direction)
+    {
+        tempOrigin = origin;
+        tempDirection = direction;
+        tempCubes = new List<Vector4>();
+
+        float stepDist = 0.5f;
+        int stepCount = 20;
+
+        bool hit = false;
+        Vector3 hitPos = Vector3.zero;
+
+        Vector3 stepPos = origin - transform.position;
+        Debug.Log($"raycast origin: {stepPos}");
+
+        for (int i = 0; i < stepCount; i++)
+        {
+            Vector3Int voxPos = new Vector3Int(Mathf.RoundToInt(stepPos.x), Mathf.RoundToInt(stepPos.y), Mathf.RoundToInt(stepPos.z));
+            stepPos = stepPos + direction * stepDist;
+
+            if (voxelData[voxPos.x, voxPos.y, voxPos.z] == 1)
+            {
+                //return new Vector3(voxPos.x, voxPos.y, voxPos.z) + transform.position;
+                tempCubes.Add(new Vector4(voxPos.x, voxPos.y, voxPos.z, 1.0f) + new Vector4(transform.position.x, transform.position.y, transform.position.z, 0.0f));
+
+            }
+            else
+            {
+                tempCubes.Add(new Vector4(voxPos.x, voxPos.y, voxPos.z, 0.0f) + new Vector4(transform.position.x, transform.position.y, transform.position.z, 0.0f));
+            }
+            stepPos = stepPos + direction * stepDist;
+        }
+        return Vector3.zero;
     }
 
    

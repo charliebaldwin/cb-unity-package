@@ -3,9 +3,10 @@
 
 #include "Packages/jp.keijiro.noiseshader/Shader/SimplexNoise3D.hlsl"
 
-RWTexture3D<float4> Voxels;
+RWTexture3D<float4> VoxelTex;
+RWStructuredBuffer<int> Voxels;
 int Size;
-uint3 Size3D;
+int3 Size3D;
 float Scale;
 float Threshold;
 float3 TranslateNoise;
@@ -15,33 +16,25 @@ float3 TranslateNoise;
 void GenerateGrid (uint3 id : SV_DispatchThreadID)
 {
     for (int y=0; y<Size3D.y; y++) {
-        float3 pos = float3(id.x, y, id.z);
+        float3 pos = float3(id.x % Size3D.x, y, id.z % Size3D.z);
         float n = SimplexNoise(pos * Scale + TranslateNoise);
         float yRamp = 1.0 - (float(y) / Size3D.y);
-        n += pow(yRamp, 2.0);
-        n *= pow(yRamp, 0.5);
-        n = clamp(n, 0.0, 1.0);
-        Voxels[pos] = float4(n, n, n, 1.0);
+        //n += pow(yRamp, 2.0);
+        //n *= pow(yRamp, 0.5);
+        //n = clamp(n, 0.0, 1.0);
+        VoxelTex[pos] = float4(n, n, n, 1.0);
+
+        int index = pos.x + Size3D.x * pos.y + Size3D.x * Size3D.y * pos.z;
+        //int index = pos.y + Size3D.y * pos.x + Size3D.y * Size3D.x * pos.z;
+        Voxels[index] = n > Threshold ? 1 : 0;
     }
 
-
-    // Result[id.xy] = float4(id.x & id.y, (id.x & 15)/15.0, (id.y & 15)/15.0, 0.0);
 }   
 
 
 
 
 
-//RWStructuredBuffer<int> Triangles;
-
-
-//struct Connections {
-//    int nx, px, ny, py, nz, pz;
-//}
-
-//float3[] GenerateQuadVerts (float3 center, float3 normal) {
-//    float3[] result = float3[4];
-//}
 static const float3 vertArray[24] = {
       float3(-0.5, -0.5,  0.5), float3(-0.5,  0.5,  0.5), float3(-0.5,  0.5, -0.5), float3(-0.5, -0.5, -0.5),  
       float3( 0.5, -0.5,  0.5), float3( 0.5, -0.5, -0.5), float3( 0.5,  0.5, -0.5), float3( 0.5,  0.5,  0.5),  
@@ -94,10 +87,14 @@ void ComputeMesh (uint3 id : SV_DispatchThreadID)
     
     for (int y=0; y<Size3D.y; y++) {
         float3 pos = float3(id.x % Size3D.x, y, id.z % Size3D.z);
-        int index = 24*(pos.y + Size3D.y * pos.x + Size3D.y * Size3D.x * pos.z);
 
-        float voxel = Voxels[pos].x;
+        //int index = 24*(pos.y + Size3D.y * pos.x + Size3D.y * Size3D.x * pos.z);
+        int index = 24*(pos.x + Size3D.x * pos.y + Size3D.x * Size3D.y * pos.z);
+        
+        //int voxIndex = pos.x + Size3D.x * pos.y + Size3D.x * Size3D.y * pos.z;
 
+        float voxel = VoxelTex[pos].x;
+        //float voxel = Voxels[voxIndex];
         
 
         if (voxel >= Threshold) {
@@ -110,22 +107,28 @@ void ComputeMesh (uint3 id : SV_DispatchThreadID)
             float vox_pz = 0.0;
 
             if (pos.x > 0) {
-                vox_nx = Voxels[pos + float3(-1.0, 0.0, 0.0)].x;
+                vox_nx = VoxelTex[pos + float3(-1.0, 0.0, 0.0)].x;
+                //vox_nx = Voxels[voxIndex - 1];
             }
             if (pos.x < Size3D.x - 1){
-                vox_px = Voxels[pos + float3(1.0, 0.0, 0.0)].x;
+                vox_px = VoxelTex[pos + float3(1.0, 0.0, 0.0)].x;
+                //vox_px = Voxels[voxIndex + 1];
             }
             if (pos.y > 0) {
-                vox_ny = Voxels[pos + float3(0.0, -1.0, 0.0)].x;
+                vox_ny = VoxelTex[pos + float3(0.0, -1.0, 0.0)].x;
+                //vox_ny = Voxels[voxIndex - Size3D.x];
             }
             if (pos.y < Size3D.y - 1){
-                vox_py = Voxels[pos + float3(0.0, 1.0, 0.0)].x;
+                vox_py = VoxelTex[pos + float3(0.0, 1.0, 0.0)].x;
+                //vox_py = Voxels[voxIndex + Size3D.x];
             }
             if (pos.z > 0) {
-                vox_nz = Voxels[pos + float3(0.0, 0.0, -1.0)].x;
+                vox_nz = VoxelTex[pos + float3(0.0, 0.0, -1.0)].x;
+                //vox_nz = Voxels[voxIndex - Size3D.x * Size3D.y];
             }
             if (pos.z < Size3D.z - 1){
-                vox_pz = Voxels[pos + float3(0.0, 0.0, 1.0)].x;
+                vox_pz = VoxelTex[pos + float3(0.0, 0.0, 1.0)].x;
+                //vox_pz = Voxels[voxIndex + Size3D.x * Size3D.y];
             }
 
 
