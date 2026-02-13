@@ -1,32 +1,35 @@
 #pragma kernel GenerateGrid
 #pragma kernel ComputeMesh
+#pragma kernel DeleteVoxel
 
 #include "Packages/jp.keijiro.noiseshader/Shader/SimplexNoise3D.hlsl"
 
-RWTexture3D<float4> VoxelTex;
+//RWTexture3D<float4> VoxelTex;
 RWStructuredBuffer<int> Voxels;
-int Size;
-int3 Size3D;
+uint3 Size;
 float Scale;
 float Threshold;
 float3 TranslateNoise;
+
+int ComputeIndex(uint3 pos, uint3 size) {
+    return (pos.x % size.x) + size.x * (pos.y % size.y) + size.x * size.y * (pos.z % size.z);
+}
 
 
 [numthreads(16,1,16)]
 void GenerateGrid (uint3 id : SV_DispatchThreadID)
 {
-    for (int y=0; y<Size3D.y; y++) {
-        float3 pos = float3(id.x % Size3D.x, y, id.z % Size3D.z);
-        float n = SimplexNoise(pos * Scale + TranslateNoise);
-        float yRamp = 1.0 - (float(y) / Size3D.y);
+    for (uint y=0; y<Size.y; y++) {
+        uint3 pos = uint3(id.x % Size.x, y, id.z % Size.z);
+        float n = 4*SimplexNoise(pos * Scale + TranslateNoise);
+        float yRamp = 1.0 - (float(y) / Size.y);
         //n += pow(yRamp, 2.0);
         //n *= pow(yRamp, 0.5);
         //n = clamp(n, 0.0, 1.0);
-        VoxelTex[pos] = float4(n, n, n, 1.0);
+        
 
-        int index = pos.x + Size3D.x * pos.y + Size3D.x * Size3D.y * pos.z;
-        //int index = pos.y + Size3D.y * pos.x + Size3D.y * Size3D.x * pos.z;
-        Voxels[index] = n > Threshold ? 1 : 0;
+        int index = ComputeIndex(pos, Size);
+        Voxels[index] = max(int(floor(n)), 0);
     }
 
 }   
@@ -75,6 +78,13 @@ static const float2  faceTexPY[4] = { float2(0.251, 0.999), float2(0.499, 0.999)
 static const float2  faceTexNZ[4] = { float2(0.251, 0.749), float2(0.499, 0.749), float2(0.499, 0.501), float2(0.251, 0.501)};
 static const float2  faceTexPZ[4] = { float2(0.751, 0.749), float2(0.999, 0.749), float2(0.999, 0.501), float2(0.751, 0.501)};
 
+static const float4 idColors[4] = {
+    float4(0.0,0.0,0.0,0.0),
+    float4(0.0, 1.0, 0.0, 1.0),
+    float4(0.3, 0.2, 0.1, 1.0),
+    float4(0.3, 0.3, 0.3, 1.0)
+};
+
 
 RWStructuredBuffer<float3> Vertices;
 RWStructuredBuffer<float3> Normals;
@@ -85,161 +95,112 @@ RWStructuredBuffer<float2> TexCoords;
 void ComputeMesh (uint3 id : SV_DispatchThreadID)
 {
     
-    for (int y=0; y<Size3D.y; y++) {
-        float3 pos = float3(id.x % Size3D.x, y, id.z % Size3D.z);
+    for (uint y=0; y<Size.y; y++) {
+        uint3 pos = uint3(id.x % Size.x, y, id.z % Size.z);
 
-        //int index = 24*(pos.y + Size3D.y * pos.x + Size3D.y * Size3D.x * pos.z);
-        int index = 24*(pos.x + Size3D.x * pos.y + Size3D.x * Size3D.y * pos.z);
+        //int index = 24*(pos.y + Size.y * pos.x + Size.y * Size.x * pos.z);
+        uint voxIndex = ComputeIndex(pos, Size);
+        uint index = 24 * voxIndex;
+
+        //float voxel = VoxelTex[pos].x;
+        uint voxel = Voxels[voxIndex];
         
-        //int voxIndex = pos.x + Size3D.x * pos.y + Size3D.x * Size3D.y * pos.z;
 
-        float voxel = VoxelTex[pos].x;
-        //float voxel = Voxels[voxIndex];
-        
+        if (voxel > 0) {
 
-        if (voxel >= Threshold) {
-
-            float vox_nx = 0.0;
-            float vox_px = 0.0;
-            float vox_ny = 0.0;
-            float vox_py = 0.0;
-            float vox_nz = 0.0;
-            float vox_pz = 0.0;
+            uint vox_nx = 0;
+            uint vox_px = 0;
+            uint vox_ny = 0;
+            uint vox_py = 0;
+            uint vox_nz = 0;
+            uint vox_pz = 0;
 
             if (pos.x > 0) {
-                vox_nx = VoxelTex[pos + float3(-1.0, 0.0, 0.0)].x;
-                //vox_nx = Voxels[voxIndex - 1];
+                //vox_nx = VoxelTex[pos + float3(-1.0, 0.0, 0.0)].x;
+                vox_nx = Voxels[voxIndex - 1];
             }
-            if (pos.x < Size3D.x - 1){
-                vox_px = VoxelTex[pos + float3(1.0, 0.0, 0.0)].x;
-                //vox_px = Voxels[voxIndex + 1];
+            if (pos.x < Size.x - 1){
+                //vox_px = VoxelTex[pos + float3(1.0, 0.0, 0.0)].x;
+                vox_px = Voxels[voxIndex + 1];
             }
             if (pos.y > 0) {
-                vox_ny = VoxelTex[pos + float3(0.0, -1.0, 0.0)].x;
-                //vox_ny = Voxels[voxIndex - Size3D.x];
+                //vox_ny = VoxelTex[pos + float3(0.0, -1.0, 0.0)].x;
+                vox_ny = Voxels[voxIndex - Size.x];
             }
-            if (pos.y < Size3D.y - 1){
-                vox_py = VoxelTex[pos + float3(0.0, 1.0, 0.0)].x;
-                //vox_py = Voxels[voxIndex + Size3D.x];
+            if (pos.y < Size.y - 1){
+                //vox_py = VoxelTex[pos + float3(0.0, 1.0, 0.0)].x;
+                vox_py = Voxels[voxIndex + Size.x];
             }
             if (pos.z > 0) {
-                vox_nz = VoxelTex[pos + float3(0.0, 0.0, -1.0)].x;
-                //vox_nz = Voxels[voxIndex - Size3D.x * Size3D.y];
+                //vox_nz = VoxelTex[pos + float3(0.0, 0.0, -1.0)].x;
+                vox_nz = Voxels[voxIndex - Size.x * Size.y];
             }
-            if (pos.z < Size3D.z - 1){
-                vox_pz = VoxelTex[pos + float3(0.0, 0.0, 1.0)].x;
-                //vox_pz = Voxels[voxIndex + Size3D.x * Size3D.y];
+            if (pos.z < Size.z - 1){
+                //vox_pz = VoxelTex[pos + float3(0.0, 0.0, 1.0)].x;
+                vox_pz = Voxels[voxIndex + Size.x * Size.y];
             }
 
 
-            if (vox_nx < Threshold) {
+            if (vox_nx == 0) {
                 for(int i=0; i<4; i++) {
                     Vertices[index + i] = faceVertsNX[i] + pos;
                     Normals[index + i] = faceNormNX;
-                    Colors[index + i] = float4(0.0,1.0,0.0,1.0);
+                    Colors[index + i] = idColors[voxel];
                     TexCoords[index + i] = faceTexNX[3-i];
                 }
             }
-            if (vox_px < Threshold) {
+            if (vox_px == 0) {
                 for(int i=0; i<4; i++) {
                     Vertices[index + i + 4] = faceVertsPX[i] + pos;
                     Normals[index + i + 4] = faceNormPX;
-                    Colors[index + i + 4] = float4(0.0,1.0,0.0,1.0);
+                    Colors[index + i + 4] = idColors[voxel];
                     TexCoords[index + i + 4] = faceTexPX[3-i];
                 }
             }
-            if (vox_ny < Threshold) {
+            if (vox_ny == 0) {
                 for(int i=0; i<4; i++) {
                     Vertices[index + i + 8] = faceVertsNY[i] + pos;
                     Normals[index + i + 8] = faceNormNY;
-                    Colors[index + i + 8] = float4(0.0,1.0,0.0,1.0);
+                    Colors[index + i + 8] = idColors[voxel];
                     TexCoords[index + i + 8] = faceTexNY[3-i];
                 }
             }
-            if (vox_py < Threshold) {
+            if (vox_py == 0) {
                 for(int i=0; i<4; i++) {
                     Vertices[index + i + 12] = faceVertsPY[i] + pos;
                     Normals[index + i + 12] = faceNormPY;
-                    Colors[index + i + 12] = float4(0.0,1.0,0.0,1.0);
+                    Colors[index + i + 12] = idColors[voxel];
                     TexCoords[index + i + 12] = faceTexPY[3-i];
                 }
             }
-            if (vox_nz < Threshold) {
+            if (vox_nz == 0) {
                 for(int i=0; i<4; i++) {
                     Vertices[index + i + 16] = faceVertsNZ[i] + pos;
                     Normals[index + i + 16] = faceNormNZ;
-                    Colors[index + i + 16] = float4(0.0,1.0,0.0,1.0);
+                    Colors[index + i + 16] = idColors[voxel];
                     TexCoords[index + i + 16] = faceTexNZ[3-i];
                 }
             }
-            if (vox_pz < Threshold) {
+            if (vox_pz == 0) {
                 for(int i=0; i<4; i++) {
                     Vertices[index + i + 20] = faceVertsPZ[i] + pos;
                     Normals[index + i + 20] = faceNormPZ;
-                    Colors[index + i + 20] = float4(0.0,1.0,0.0,1.0);
+                    Colors[index + i + 20] = idColors[voxel];
                     TexCoords[index + i + 20] = faceTexPZ[3-i];
                 }
             }
-
-
-
-            //for (int v = 0; v < 24; v++) {
-            //    float3 vert = vertArray[v];
-            //    Vertices[v + index] = float3(vert.x + pos.x, vert.y + pos.y, vert.z + pos.z);
-            //    Normals[v + index] = normArray[v];
-            //    //Colors[v + index] = float4(pos.x / Size3D.x, pos.y / Size3D.y, pos.z / Size3D.z, 1.0);
-            //    Colors[v + index] = float4(0.0,1.0,0.0,1.0);
-
-            //}
-
-
         }
     }
-
-    //else if (voxel == 0.0) {
-    //    for (int v = 0; v < 24; v++) {
-    //        Vertices[v + index] = float3(0.0,0.0,0.0);
-    //        Normals[v + index] = float3(0.0,0.0,0.0);
-    //        Colors[v + index] = float4(0.0,0.0,0.0,0.0);
-    //    }
-    //}
-
     
 
-   // for (int t=0; t<36; t++) {
-   //     Triangles[t] = triArray[t];
-   // }
 
-    
-    //int v = Voxels[id.xyz];
+}
 
-    //if (v == 1) {
-    //    Connections adj;
-    //    adj.nx=1;
-    //    adj.px=1;
-    //    adj.ny=1;
-    //    adj.py=1;
-    //    adj.nz=1;
-    //    adj.pz=1;
+int3 DeletePos;
+[numthreads(1,1,1)]
+void DeleteVoxel (uint3 id : SV_DispatchThreadID) 
+{
+    int index = ComputeIndex(DeletePos, Size);
 
-    //    if (id.x > 0) {
-    //       adj.nx = 1-Voxels[id.xyz + uint3(-1, 0, 0)]; 
-    //    }
-    //    if (id.x < Size-1) {
-    //       adj.px = 1-Voxels[id.xyz + uint3( 1, 0, 0)]; 
-    //    }
-    //    if (id.y > 0) {
-    //       adj.ny = 1-Voxels[id.xyz + uint3( 0,-1, 0)]; 
-    //    }
-    //    if (id.y < Size-1) {
-    //       adj.py = 1-Voxels[id.xyz + uint3( 0, 1, 0)]; 
-    //    }
-    //    if (id.z > 0) {
-    //       adj.nz = 1-Voxels[id.xyz + uint3( 0, 0,-1)]; 
-    //    }
-    //    if (id.z < Size-1) {
-    //       adj.pz = 1-Voxels[id.xyz + uint3( 0, 0, 1)]; 
-    //    }
-
-    //}
+    Voxels[index] = 0;
 }

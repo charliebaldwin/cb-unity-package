@@ -12,10 +12,15 @@ public class ChunkRaycast : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        RaycastHit hit;
-        if (Physics.Raycast(new Ray(transform.position, transform.forward), out hit, 9999f, mask))
+        
+
+        if (Input.GetMouseButton(0))
         {
-            hit.collider.gameObject.GetComponent<VoxelMesherCompute>().VoxelRaycast(hit.point, transform.forward);
+            RaycastHit hit;
+            if (Physics.Raycast(new Ray(transform.position, transform.forward), out hit, 9999f, mask))
+            {
+                hit.collider.gameObject.GetComponent<VoxelMesherCompute>().VoxelRaycast(hit.point, transform.forward);
+            }
         }
 
 

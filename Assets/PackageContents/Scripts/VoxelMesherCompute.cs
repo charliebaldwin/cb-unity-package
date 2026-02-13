@@ -20,7 +20,7 @@ public class VoxelMesherCompute : MonoBehaviour
     public RenderTexture voxelTex;
     public RenderTexture testTex;
 
-    public int[,,] voxelData;
+    public int[,,] voxelData = new int[1,1,1];
 
     public Vector3 NoiseTranslate = Vector3.zero;
     public float NoiseScale = 0.1f;
@@ -33,10 +33,10 @@ public class VoxelMesherCompute : MonoBehaviour
     private Mesh mesh;
     private BoxCollider boxCollider;
 
-    private Vector3 lastPos;
-    private float lastScale;
-    private float lastThresh;
-    private Vector3Int lastSize;
+    private Vector3 lastPos = Vector3.zero;
+    private float lastScale = 0f;
+    private float lastThresh = 0f;
+    private Vector3Int lastSize = Vector3Int.zero;
 
     private Vector3 tempOrigin = Vector3.zero;
     private Vector3 tempDirection = Vector3.forward;
@@ -53,6 +53,9 @@ public class VoxelMesherCompute : MonoBehaviour
         lastScale = NoiseScale;
         lastThresh = NoiseThreshold;
         lastSize = Size3D;
+
+        boxCollider.size = new Vector3(Size3D.x, Size3D.y, Size3D.z);
+        boxCollider.center = boxCollider.size * 0.5f - new Vector3(0.5f, 0.5f, 0.5f);
     }
 
 
@@ -66,19 +69,19 @@ public class VoxelMesherCompute : MonoBehaviour
     private void OnDrawGizmos()
     {
         Gizmos.color = Color.green;
-        for (int x = 0; x < Size3D.x; x++)
-        {
-            for (int y = 0; y < Size3D.y; y++)
-            {
-                for (int z = 0; z < Size3D.z; z++)
-                {
-                    if (voxelData[x, y, z] == 1)
-                    {
-                       // Gizmos.DrawCube(transform.position + new Vector3(x, y, z), Vector3.one);
-                    }
-                }
-            }
-        }
+        //for (int x = 0; x < Size3D.x; x++)
+        //{
+        //    for (int y = 0; y < Size3D.y; y++)
+        //    {
+        //        for (int z = 0; z < Size3D.z; z++)
+        //        {
+        //            if (voxelData[x, y, z] == 1)
+        //            {
+        //               // Gizmos.DrawCube(transform.position + new Vector3(x, y, z), Vector3.one);
+        //            }
+        //        }
+        //    }
+        //}
 
         Gizmos.color = Color.white;
         Gizmos.DrawRay(tempOrigin, 100f * tempDirection);
@@ -134,34 +137,28 @@ public class VoxelMesherCompute : MonoBehaviour
 
         int kernel = compute.FindKernel("GenerateGrid");
 
-        voxelTex.Release();
+        //voxelTex.Release();
 
-        voxelTex.height = Size;
-        voxelTex.width = Size;
-        voxelTex.volumeDepth = Size;
+        //voxelTex.height = Size;
+        //voxelTex.width = Size;
+        //voxelTex.volumeDepth = Size;
 
-        voxelTex.Create();
+        //voxelTex.Create();
 
         voxelBuffer = new ComputeBuffer(Size3D.x * Size3D.y * Size3D.z, sizeof(int));
 
 
-        compute.SetTexture(kernel, "VoxelTex", voxelTex);
+        //compute.SetTexture(kernel, "VoxelTex", voxelTex);
         compute.SetBuffer(kernel, "Voxels", voxelBuffer);
         compute.SetVector("TranslateNoise", transform.position * NoiseScale);
         compute.SetFloat("Scale", NoiseScale);
-        compute.SetFloat("Size", Size);
-        compute.SetVector("Size3D", new Vector4(Size3D.x, Size3D.y, Size3D.z, 0.0f));
+        compute.SetVector("Size", new Vector4(Size3D.x, Size3D.y, Size3D.z, 0.0f));
         compute.SetFloat("Threshold", 0.2f);
         compute.Dispatch(kernel, Size3D.x, 1, Size3D.z);
 
         int[] vData = new int[Size3D.x * Size3D.y * Size3D.z];
         voxelBuffer.GetData(vData);
         voxelData = FlatTo3DArray(vData);
-
-        //for (int y = 0; y < Size3D.y; y++)
-        //{
-        //    Debug.Log($"y:{y} = {voxelData[0, y, 0]}");
-        //}
 
     }
 
@@ -175,15 +172,16 @@ public class VoxelMesherCompute : MonoBehaviour
 
         int kernel = compute.FindKernel("ComputeMesh");
 
+        compute.SetBuffer(kernel, "Voxels", voxelBuffer);
+        compute.SetFloat("Threshold", NoiseThreshold);
+        compute.SetVector("Size", new Vector4(Size3D.x, Size3D.y, Size3D.z, 0.0f));
+
         compute.SetBuffer(kernel, "Vertices", vBuffer);
         compute.SetBuffer(kernel, "Normals", nBuffer);
         compute.SetBuffer(kernel, "Colors", cBuffer);
         compute.SetBuffer(kernel, "TexCoords", tBuffer);
-        compute.SetBuffer(kernel, "Voxels", voxelBuffer);
-        compute.SetInt("Size", Size);
-        compute.SetFloat("Threshold", NoiseThreshold);
-        compute.SetVector("Size3D", new Vector4(Size3D.x, Size3D.y, Size3D.z, 0.0f));
-        compute.SetTexture(kernel, "VoxelTex", voxelTex);
+
+
 
         compute.Dispatch(kernel, Size3D.x, 1, Size3D.z);
 
@@ -201,7 +199,6 @@ public class VoxelMesherCompute : MonoBehaviour
        // nData = TrimArrayVec3(nData);
        // cData = TrimArrayColor(cData);
 
-        meshFilter = GetComponent<MeshFilter>();
         meshFilter.sharedMesh = null;
         mesh = new Mesh();
         mesh.Clear();
@@ -213,7 +210,6 @@ public class VoxelMesherCompute : MonoBehaviour
         mesh.RecalculateBounds();
         meshFilter.sharedMesh = mesh;
 
-        //Debug.Log($"vData length: {vData.Length}");
 
     }
 
@@ -257,24 +253,6 @@ public class VoxelMesherCompute : MonoBehaviour
         return result;
     }
 
-    private int[,,] TextureToArray(RenderTexture rt)
-    {
-        int[,,] result = new int[Size3D.x, Size3D.y, Size3D.z];
-        Texture3D tex3D = new Texture3D(Size3D.x, Size3D.y, Size3D.z, TextureFormat.ARGB32, true);
-        tex3D.CopyPixels(rt);
-        Color[] pixels = tex3D.GetPixels(0);
-        for(int x=0; x < Size3D.x; x++)
-        {
-            for (int y=0; y < Size3D.y; y++)
-            {
-                for (int z=0; z < Size3D.z; z++)
-                {
-                    result[x, y, z] = pixels[x + Size3D.x * y + Size3D.x * Size3D.y * z].r > NoiseThreshold ? 1 : 0;
-                }
-            }
-        }
-        return result;
-    }
     private int[,,] FlatTo3DArray(int[] flat)
     {
         int[,,] result = new int[Size3D.x, Size3D.y, Size3D.z];
@@ -290,6 +268,21 @@ public class VoxelMesherCompute : MonoBehaviour
         }
         return result;
     }
+    private int[] ThreeDToFlatArray(int[,,] threeDarray)
+    {
+        int[] result = new int[Size3D.x * Size3D.y * Size3D.z];
+        for (int x = 0; x < Size3D.x; x++)
+        {
+            for (int y = 0; y < Size3D.y; y++)
+            {
+                for (int z = 0; z < Size3D.z; z++)
+                {
+                    result[x + Size3D.x * y + Size3D.x * Size3D.y * z] = threeDarray[x,y,z];
+                }
+            }
+        }
+        return result;
+    }
 
     public Vector3 VoxelRaycast(Vector3 origin, Vector3 direction)
     {
@@ -297,8 +290,8 @@ public class VoxelMesherCompute : MonoBehaviour
         tempDirection = direction;
         tempCubes = new List<Vector4>();
 
-        float stepDist = 0.5f;
-        int stepCount = 20;
+        float stepDist = 0.1f;
+        int stepCount = 100;
 
         bool hit = false;
         Vector3 hitPos = Vector3.zero;
@@ -311,11 +304,12 @@ public class VoxelMesherCompute : MonoBehaviour
             Vector3Int voxPos = new Vector3Int(Mathf.RoundToInt(stepPos.x), Mathf.RoundToInt(stepPos.y), Mathf.RoundToInt(stepPos.z));
             stepPos = stepPos + direction * stepDist;
 
-            if (voxelData[voxPos.x, voxPos.y, voxPos.z] == 1)
+            if (voxelData[voxPos.x, voxPos.y, voxPos.z] > 0)
             {
                 //return new Vector3(voxPos.x, voxPos.y, voxPos.z) + transform.position;
                 tempCubes.Add(new Vector4(voxPos.x, voxPos.y, voxPos.z, 1.0f) + new Vector4(transform.position.x, transform.position.y, transform.position.z, 0.0f));
-
+                DeleteVoxel(Compute, voxPos);
+                return voxPos;
             }
             else
             {
@@ -326,5 +320,24 @@ public class VoxelMesherCompute : MonoBehaviour
         return Vector3.zero;
     }
 
-   
+    private void DeleteVoxel (ComputeShader compute, Vector3Int voxPosition)
+    {
+        voxelData[voxPosition.x, voxPosition.y, voxPosition.z] = 0;
+        voxelBuffer.SetData(ThreeDToFlatArray(voxelData));
+        //int kernel = compute.FindKernel("DeleteVoxel");
+        //compute.SetTexture(kernel, "VoxelTex", voxelTex);
+        //compute.SetBuffer(kernel, "Voxels", voxelBuffer);
+        //compute.SetVector("DeletePos", new Vector4(voxPosition.x, voxPosition.y, voxPosition.z, 0.0f));
+        //compute.SetVector("Size", new Vector4(Size3D.x, Size3D.y, Size3D.z, 0.0f));
+
+
+        //compute.Dispatch(kernel, 1, 1, 1);
+
+        //VoxelNoise(Compute);
+        GenerateMeshCompute(Compute);
+
+
+    }
+
+
 }

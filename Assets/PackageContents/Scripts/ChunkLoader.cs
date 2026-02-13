@@ -12,7 +12,7 @@ public class ChunkLoader : MonoBehaviour
     public int Spacing = 8;
 
     [ShowInInspector]
-    private List<int2> chunks = new List<int2>();
+    private List<int3> chunks = new List<int3>();
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
@@ -32,12 +32,12 @@ public class ChunkLoader : MonoBehaviour
         //    }
         //}
 
-        int2 steppedPos = new int2(Mathf.FloorToInt(transform.position.x / Spacing), Mathf.FloorToInt(transform.position.z / Spacing));
+        int3 steppedPos = new int3(Mathf.FloorToInt(transform.position.x / Spacing), Mathf.FloorToInt(transform.position.y / Spacing), Mathf.FloorToInt(transform.position.z / Spacing));
         if (!chunks.Contains(steppedPos))
         {
             chunks.Add(steppedPos);
             GameObject newChunk = Instantiate(ChunkPrefab);
-            newChunk.transform.position = new Vector3(steppedPos.x, 0, steppedPos.y) * Spacing;
+            newChunk.transform.position = new Vector3(steppedPos.x, steppedPos.y, steppedPos.z) * Spacing;
         }
     }
 }

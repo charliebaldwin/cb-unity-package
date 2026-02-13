@@ -633,6 +633,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 1670060081210582922, guid: 33310f4d894d76046b677c2e8a3d9976, type: 3}
+      propertyPath: m_ExcludeLayers.m_Bits
+      value: 8
+      objectReference: {fileID: 0}
     - target: {fileID: 3736821807430417006, guid: 33310f4d894d76046b677c2e8a3d9976, type: 3}
       propertyPath: m_LocalPosition.x
       value: -17.89
@@ -733,7 +737,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ChunkPrefab: {fileID: 3265665669344878959, guid: afa5dac21cadea249be601a26864fbd9, type: 3}
   Radius: 0
-  Spacing: 8
+  Spacing: 12
 --- !u!4 &1977997080
 Transform:
   m_ObjectHideFlags: 0
@@ -763,11 +767,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3265665669344878959, guid: afa5dac21cadea249be601a26864fbd9, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6851829942216310068, guid: afa5dac21cadea249be601a26864fbd9, type: 3}
+      propertyPath: Size3D.y
+      value: 4
       objectReference: {fileID: 0}
     - target: {fileID: 8943404616224546622, guid: afa5dac21cadea249be601a26864fbd9, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -8
+      value: -16
       objectReference: {fileID: 0}
     - target: {fileID: 8943404616224546622, guid: afa5dac21cadea249be601a26864fbd9, type: 3}
       propertyPath: m_LocalPosition.y
@@ -775,7 +783,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8943404616224546622, guid: afa5dac21cadea249be601a26864fbd9, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 0
+      value: -16
       objectReference: {fileID: 0}
     - target: {fileID: 8943404616224546622, guid: afa5dac21cadea249be601a26864fbd9, type: 3}
       propertyPath: m_LocalRotation.w
