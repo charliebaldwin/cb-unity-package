@@ -16,8 +16,9 @@ public class ChunkRaycast : MonoBehaviour
 
         if (Input.GetMouseButton(0))
         {
-            RaycastHit hit;
-            if (Physics.Raycast(new Ray(transform.position, transform.forward), out hit, 9999f, mask))
+            RaycastHit[] hits;
+            hits = Physics.RaycastAll(new Ray(transform.position, transform.forward), 999f, mask);
+            foreach (RaycastHit hit in hits)
             {
                 hit.collider.gameObject.GetComponent<VoxelChunk>().VoxelRaycast(hit.point, transform.forward);
             }

@@ -13,7 +13,7 @@ public class VoxelChunk : MonoBehaviour
     public Vector3Int Size3D = new Vector3Int(16,32,16);
     ComputeBuffer cBuffer;
     ComputeBuffer vBuffer;
-    ComputeBuffer nBuffer;
+    ComputeBuffer nBuffer; 
     ComputeBuffer tBuffer;
     ComputeBuffer voxelBuffer;
 
@@ -96,7 +96,7 @@ public class VoxelChunk : MonoBehaviour
             {
                 Gizmos.color = Color.white;
             }
-           // Gizmos.DrawCube(new Vector3(v.x, v.y, v.z), Vector3.one);
+            Gizmos.DrawCube(new Vector3(v.x, v.y, v.z), Vector3.one);
         }
         Gizmos.color = Color.blue;
         Gizmos.DrawSphere(tempOrigin, 0.5f);
