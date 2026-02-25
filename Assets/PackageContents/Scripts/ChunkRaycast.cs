@@ -19,7 +19,7 @@ public class ChunkRaycast : MonoBehaviour
             RaycastHit hit;
             if (Physics.Raycast(new Ray(transform.position, transform.forward), out hit, 9999f, mask))
             {
-                hit.collider.gameObject.GetComponent<VoxelMesherCompute>().VoxelRaycast(hit.point, transform.forward);
+                hit.collider.gameObject.GetComponent<VoxelChunk>().VoxelRaycast(hit.point, transform.forward);
             }
         }
 

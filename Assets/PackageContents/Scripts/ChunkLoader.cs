@@ -32,12 +32,12 @@ public class ChunkLoader : MonoBehaviour
         //    }
         //}
 
-        int3 steppedPos = new int3(Mathf.FloorToInt(transform.position.x / Spacing), Mathf.FloorToInt(transform.position.y / Spacing), Mathf.FloorToInt(transform.position.z / Spacing));
+        int3 steppedPos = new int3(Mathf.FloorToInt(transform.position.x / Spacing), 0, Mathf.FloorToInt(transform.position.z / Spacing));
         if (!chunks.Contains(steppedPos))
         {
             chunks.Add(steppedPos);
             GameObject newChunk = Instantiate(ChunkPrefab);
-            newChunk.transform.position = new Vector3(steppedPos.x, steppedPos.y, steppedPos.z) * Spacing;
+            newChunk.transform.position = new Vector3(steppedPos.x, 0, steppedPos.z) * Spacing;
         }
     }
 }

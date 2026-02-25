@@ -7,7 +7,7 @@ using VInspector;
 using static Perlin;
 using static UnityEditor.PlayerSettings;
 
-public class VoxelMesherCompute : MonoBehaviour
+public class VoxelChunk : MonoBehaviour
 {
     public int Size = 3;
     public Vector3Int Size3D = new Vector3Int(16,32,16);
@@ -21,7 +21,7 @@ public class VoxelMesherCompute : MonoBehaviour
     public RenderTexture testTex;
 
     public int[,,] voxelData = new int[1,1,1];
-
+    
     public Vector3 NoiseTranslate = Vector3.zero;
     public float NoiseScale = 0.1f;
     public float NoiseThreshold = 0.5f;
