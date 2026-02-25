@@ -284,7 +284,7 @@ public class VoxelChunk : MonoBehaviour
         return result;
     }
 
-    public Vector3 VoxelRaycast(Vector3 origin, Vector3 direction)
+    public VoxelHitData VoxelRaycast(Vector3 origin, Vector3 direction)
     {
         tempOrigin = origin;
         tempDirection = direction;
@@ -293,33 +293,53 @@ public class VoxelChunk : MonoBehaviour
         float stepDist = 0.1f;
         int stepCount = 100;
 
-        bool hit = false;
-        Vector3 hitPos = Vector3.zero;
+        VoxelHitData hitData = new VoxelHitData(false);
 
-        Vector3 stepPos = origin - transform.position;
-        Debug.Log($"raycast origin: {stepPos}");
+        Vector3 stepPos = origin;
 
         for (int i = 0; i < stepCount; i++)
         {
-            Vector3Int voxPos = new Vector3Int(Mathf.RoundToInt(stepPos.x), Mathf.RoundToInt(stepPos.y), Mathf.RoundToInt(stepPos.z));
+            Vector3Int voxPos = WorldPosToVoxel(stepPos);
             stepPos = stepPos + direction * stepDist;
 
-            if (voxelData[voxPos.x, voxPos.y, voxPos.z] > 0)
+           // Debug.Log($"checking voxel {voxPos}");
+
+            if (IsPosInGridBounds(voxPos, Size3D))
             {
-                //return new Vector3(voxPos.x, voxPos.y, voxPos.z) + transform.position;
-                tempCubes.Add(new Vector4(voxPos.x, voxPos.y, voxPos.z, 1.0f) + new Vector4(transform.position.x, transform.position.y, transform.position.z, 0.0f));
-                DeleteVoxel(Compute, voxPos);
-                return voxPos;
+                if (voxelData[voxPos.x, voxPos.y, voxPos.z] > 0)
+                {
+                    //return new Vector3(voxPos.x, voxPos.y, voxPos.z) + transform.position;
+                    tempCubes.Add(new Vector4(voxPos.x, voxPos.y, voxPos.z, 1.0f) + new Vector4(transform.position.x, transform.position.y, transform.position.z, 0.0f));
+
+                    hitData.didHit = true;
+                    hitData.hitPos = stepPos;
+                    hitData.localVoxelPos = voxPos;
+                    //DeleteVoxel(Compute, voxPos);
+
+                }
+                else
+                {
+                    tempCubes.Add(new Vector4(voxPos.x, voxPos.y, voxPos.z, 0.0f) + new Vector4(transform.position.x, transform.position.y, transform.position.z, 0.0f));
+                }
             }
             else
             {
-                tempCubes.Add(new Vector4(voxPos.x, voxPos.y, voxPos.z, 0.0f) + new Vector4(transform.position.x, transform.position.y, transform.position.z, 0.0f));
+                // ray is outside bounds
+                //hitData.didHit = false;
+                //hitData.hitPos = stepPos;
+                //return hitData;
+
             }
             stepPos = stepPos + direction * stepDist;
+            hitData.hitPos = stepPos;
         }
-        return Vector3.zero;
+        return hitData;
     }
 
+    public void BreakBlock(Vector3Int position)
+    {
+        DeleteVoxel(Compute, position);
+    }
     private void DeleteVoxel (ComputeShader compute, Vector3Int voxPosition)
     {
         voxelData[voxPosition.x, voxPosition.y, voxPosition.z] = 0;
@@ -339,5 +359,34 @@ public class VoxelChunk : MonoBehaviour
 
     }
 
+    private Vector3Int WorldPosToVoxel(Vector3 worldPos)
+    {
+        Vector3 localPos = worldPos - transform.position;
+        Vector3Int result = new Vector3Int(Mathf.RoundToInt(localPos.x), Mathf.RoundToInt(localPos.y), Mathf.RoundToInt(localPos.z));
+        //result.Clamp(new Vector3Int(0, 0, 0), new Vector3Int(Size3D.x - 1, Size3D.y - 1, Size3D.z - 1));
+        return result;
+    }
 
+    private bool IsPosInGridBounds(Vector3Int pos, Vector3Int size)
+    {
+        return pos.x >= 0 && pos.y >= 0 && pos.z >= 0 && pos.x < size.x && pos.y < size.y && pos.z < size.z;
+    }
+
+
+}
+
+public struct VoxelHitData
+{
+    public bool didHit;
+    public Vector3Int localVoxelPos;
+    public Vector3 hitPos;
+    public Vector3 hitNormal;
+
+    public VoxelHitData(bool didHit)
+    {
+        this.didHit = didHit;
+        localVoxelPos = Vector3Int.zero;
+        hitPos = Vector3.zero;
+        hitNormal = Vector3.up;
+    }
 }
