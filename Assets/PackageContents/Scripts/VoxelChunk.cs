@@ -9,6 +9,8 @@ using static UnityEditor.PlayerSettings;
 
 public class VoxelChunk : MonoBehaviour
 {
+    public static bool DrawDebugs = false;
+
     public int Size = 3;
     public Vector3Int Size3D = new Vector3Int(16,32,16);
     ComputeBuffer cBuffer;
@@ -68,38 +70,29 @@ public class VoxelChunk : MonoBehaviour
 
     private void OnDrawGizmos()
     {
-        Gizmos.color = Color.green;
-        //for (int x = 0; x < Size3D.x; x++)
-        //{
-        //    for (int y = 0; y < Size3D.y; y++)
-        //    {
-        //        for (int z = 0; z < Size3D.z; z++)
-        //        {
-        //            if (voxelData[x, y, z] == 1)
-        //            {
-        //               // Gizmos.DrawCube(transform.position + new Vector3(x, y, z), Vector3.one);
-        //            }
-        //        }
-        //    }
-        //}
-
-        Gizmos.color = Color.white;
-        Gizmos.DrawRay(tempOrigin, 100f * tempDirection);
-        foreach (Vector4 v in tempCubes)
+        if (DrawDebugs)
         {
-            if (v.w == 1.0f)
+            Gizmos.color = Color.green;
+
+
+            Gizmos.color = Color.white;
+            Gizmos.DrawRay(tempOrigin, 100f * tempDirection);
+            foreach (Vector4 v in tempCubes)
             {
-                Gizmos.color = Color.red;
+                if (v.w == 1.0f)
+                {
+                    Gizmos.color = Color.red;
+                    Gizmos.DrawCube(new Vector3(v.x, v.y, v.z), Vector3.one);
+                }
+                else
+                {
+                    Gizmos.color = Color.white;
+                }
                 Gizmos.DrawCube(new Vector3(v.x, v.y, v.z), Vector3.one);
             }
-            else
-            {
-                Gizmos.color = Color.white;
-            }
-            Gizmos.DrawCube(new Vector3(v.x, v.y, v.z), Vector3.one);
+            Gizmos.color = Color.blue;
+            Gizmos.DrawSphere(tempOrigin, 0.5f);
         }
-        Gizmos.color = Color.blue;
-        Gizmos.DrawSphere(tempOrigin, 0.5f);
 
     }
 
@@ -315,6 +308,7 @@ public class VoxelChunk : MonoBehaviour
                     hitData.hitPos = stepPos;
                     hitData.localVoxelPos = voxPos;
                     //DeleteVoxel(Compute, voxPos);
+                    return hitData;
 
                 }
                 else
@@ -332,6 +326,7 @@ public class VoxelChunk : MonoBehaviour
             }
             stepPos = stepPos + direction * stepDist;
             hitData.hitPos = stepPos;
+            return hitData;
         }
         return hitData;
     }
@@ -344,16 +339,7 @@ public class VoxelChunk : MonoBehaviour
     {
         voxelData[voxPosition.x, voxPosition.y, voxPosition.z] = 0;
         voxelBuffer.SetData(ThreeDToFlatArray(voxelData));
-        //int kernel = compute.FindKernel("DeleteVoxel");
-        //compute.SetTexture(kernel, "VoxelTex", voxelTex);
-        //compute.SetBuffer(kernel, "Voxels", voxelBuffer);
-        //compute.SetVector("DeletePos", new Vector4(voxPosition.x, voxPosition.y, voxPosition.z, 0.0f));
-        //compute.SetVector("Size", new Vector4(Size3D.x, Size3D.y, Size3D.z, 0.0f));
 
-
-        //compute.Dispatch(kernel, 1, 1, 1);
-
-        //VoxelNoise(Compute);
         GenerateMeshCompute(Compute);
 
 
@@ -363,7 +349,6 @@ public class VoxelChunk : MonoBehaviour
     {
         Vector3 localPos = worldPos - transform.position;
         Vector3Int result = new Vector3Int(Mathf.RoundToInt(localPos.x), Mathf.RoundToInt(localPos.y), Mathf.RoundToInt(localPos.z));
-        //result.Clamp(new Vector3Int(0, 0, 0), new Vector3Int(Size3D.x - 1, Size3D.y - 1, Size3D.z - 1));
         return result;
     }
 
