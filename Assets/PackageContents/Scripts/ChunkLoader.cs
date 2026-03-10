@@ -15,10 +15,13 @@ public class ChunkLoader : MonoBehaviour
 
     [ShowInInspector]
     private List<int2> chunks = new List<int2>();
+    private VoxelChunk[,] voxelChunks;
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
+        voxelChunks = new VoxelChunk[InitialChunks.x, InitialChunks.y];
+
         for (int x = 0; x < InitialChunks.x; x++)
         {
             for (int z = 0; z < InitialChunks.y; z++)
@@ -42,9 +45,16 @@ public class ChunkLoader : MonoBehaviour
         if (!chunks.Contains(pos))
         {
             chunks.Add(pos);
-            GameObject newChunk = Instantiate(ChunkPrefab);
+            VoxelChunk newChunk = Instantiate(ChunkPrefab).GetComponent<VoxelChunk>(); ;
+            voxelChunks[pos.x, pos.y] = newChunk;
+            newChunk.ChunkCoord = pos;
+            newChunk.ChunkLoader = this;
             newChunk.transform.position = new Vector3(pos.x, 0, pos.y) * Spacing;
         }
+    }
 
+    public VoxelChunk GetAdjacentChunk(int2 pos, int2 dir)
+    {
+        return voxelChunks[pos.x + dir.x, pos.y + dir.y];
     }
 }

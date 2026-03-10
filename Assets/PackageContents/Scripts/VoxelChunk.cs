@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Rendering;
 using VInspector;
@@ -19,6 +20,8 @@ public class VoxelChunk : MonoBehaviour
     ComputeBuffer tBuffer;
     ComputeBuffer voxelBuffer;
 
+    public int2 ChunkCoord;
+    public ChunkLoader ChunkLoader;
     public RenderTexture voxelTex;
     public RenderTexture testTex;
 
@@ -43,6 +46,11 @@ public class VoxelChunk : MonoBehaviour
     private Vector3 tempOrigin = Vector3.zero;
     private Vector3 tempDirection = Vector3.forward;
     private List<Vector4> tempCubes = new List<Vector4>();
+
+    private VoxelChunk adjacentChunkNX;
+    private VoxelChunk adjacentChunkPX;
+    private VoxelChunk adjacentChunkNZ;
+    private VoxelChunk adjacentChunkPZ;
 
 
     private void Awake()
@@ -283,12 +291,13 @@ public class VoxelChunk : MonoBehaviour
         tempDirection = direction;
         tempCubes = new List<Vector4>();
 
-        float stepDist = 0.1f;
-        int stepCount = 100;
+        float stepDist = 0.05f;
+        int stepCount = 300;
 
         VoxelHitData hitData = new VoxelHitData(false);
 
         Vector3 stepPos = origin;
+        Vector3Int lastVoxPos = WorldPosToVoxel(stepPos);
 
         for (int i = 0; i < stepCount; i++)
         {
@@ -303,6 +312,8 @@ public class VoxelChunk : MonoBehaviour
                 {
                     //return new Vector3(voxPos.x, voxPos.y, voxPos.z) + transform.position;
                     tempCubes.Add(new Vector4(voxPos.x, voxPos.y, voxPos.z, 1.0f) + new Vector4(transform.position.x, transform.position.y, transform.position.z, 0.0f));
+
+                    hitData.hitNormal = lastVoxPos - voxPos;
 
                     hitData.didHit = true;
                     hitData.hitPos = stepPos;
@@ -319,14 +330,15 @@ public class VoxelChunk : MonoBehaviour
             else
             {
                 // ray is outside bounds
-                //hitData.didHit = false;
-                //hitData.hitPos = stepPos;
-                //return hitData;
+                hitData.didHit = false;
+                hitData.hitPos = stepPos;
+                return hitData;
 
             }
             stepPos = stepPos + direction * stepDist;
             hitData.hitPos = stepPos;
-            return hitData;
+            lastVoxPos = voxPos;
+            //return hitData;
         }
         return hitData;
     }
@@ -335,14 +347,33 @@ public class VoxelChunk : MonoBehaviour
     {
         DeleteVoxel(Compute, position);
     }
+    public void PlaceBlock(Vector3Int position, Vector3Int normal, int blockType)
+    {
+        if (IsPosInGridBounds(position + normal, Size3D))
+        {
+            AddVoxel(Compute, position + normal, blockType);
+        } else
+        {
+            VoxelChunk adjacentChunk = ChunkLoader.GetAdjacentChunk(ChunkCoord, new int2(normal.x, normal.z));
+            adjacentChunk.PlaceBlock(new Vector3Int(Mathf.Abs(position.x +  Size3D.x * normal.x), position.y, Mathf.Abs(position.z + Size3D.z * normal.z)), normal, blockType);
+        }
+    }
     private void DeleteVoxel (ComputeShader compute, Vector3Int voxPosition)
     {
         voxelData[voxPosition.x, voxPosition.y, voxPosition.z] = 0;
         voxelBuffer.SetData(ThreeDToFlatArray(voxelData));
 
         GenerateMeshCompute(Compute);
+    }
+    private void AddVoxel (ComputeShader compute, Vector3Int voxPosition, int blockType)
+    {
+        if (voxelData[voxPosition.x, voxPosition.y, voxPosition.z] == 0)
+        {
+            voxelData[voxPosition.x, voxPosition.y, voxPosition.z] = blockType;
+            voxelBuffer.SetData(ThreeDToFlatArray(voxelData));
 
-
+            GenerateMeshCompute(Compute);
+        }
     }
 
     private Vector3Int WorldPosToVoxel(Vector3 worldPos)
@@ -357,6 +388,8 @@ public class VoxelChunk : MonoBehaviour
         return pos.x >= 0 && pos.y >= 0 && pos.z >= 0 && pos.x < size.x && pos.y < size.y && pos.z < size.z;
     }
 
+   
+
 
 }
 
@@ -365,13 +398,13 @@ public struct VoxelHitData
     public bool didHit;
     public Vector3Int localVoxelPos;
     public Vector3 hitPos;
-    public Vector3 hitNormal;
+    public Vector3Int hitNormal;
 
     public VoxelHitData(bool didHit)
     {
         this.didHit = didHit;
         localVoxelPos = Vector3Int.zero;
         hitPos = Vector3.zero;
-        hitNormal = Vector3.up;
+        hitNormal = Vector3Int.up;
     }
 }
