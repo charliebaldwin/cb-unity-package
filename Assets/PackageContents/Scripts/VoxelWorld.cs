@@ -11,7 +11,7 @@ public class VoxelWorld : MonoBehaviour
     public GameObject ChunkPrefab;
     public int Spacing = 8;
 
-    private List<int2> chunks = new List<int2>();
+   // private List<int2> chunks = new List<int2>();
     private VoxelChunk[,] voxelChunks;
 
     private void Awake()
@@ -40,13 +40,75 @@ public class VoxelWorld : MonoBehaviour
 
     public void AddChunk(int2 pos)
     {
-        if (!chunks.Contains(pos))
+       // if (!chunks.Contains(pos))
+        if (voxelChunks[pos.x, pos.y] == null)
         {
-            chunks.Add(pos);
+            //chunks.Add(pos);
             VoxelChunk newChunk = Instantiate(ChunkPrefab).GetComponent<VoxelChunk>();
             voxelChunks[pos.x, pos.y] = newChunk;
             newChunk.ChunkCoord = pos;
             newChunk.transform.position = new Vector3(pos.x, 0, pos.y) * Spacing;
         }
+    }
+
+    public void DestroyVoxel(Vector3 worldPos)
+    {
+        int2 chunkPos = FindContainingChunk(worldPos);
+        VoxelChunk chunk = voxelChunks[chunkPos.x, chunkPos.y];
+        chunk.BreakBlock(worldPos);
+    }
+
+    public void AddVoxel(Vector3 worldPos, int blockType)
+    {
+        int2 chunkPos = FindContainingChunk(worldPos);
+        VoxelChunk chunk = voxelChunks[chunkPos.x, chunkPos.y];
+        chunk.PlaceBlock(worldPos, blockType);
+    }
+
+    public VoxelHitData VoxelRaycast(Vector3 pos, Vector3 dir, float distance, int steps)
+    {
+        Vector3 d = (distance / (float)steps) * dir;
+        Vector3 stepPos = pos;
+        Vector3Int lastVoxelPos = WorldPosToVoxel(stepPos);
+        Vector3Int lastVoxelPos2 = lastVoxelPos;
+        VoxelHitData hitData = new VoxelHitData(false);
+
+        for (int i = 0; i < steps; i++) {
+            stepPos += d;
+            Vector3Int voxelPos = WorldPosToVoxel(stepPos);
+            if (voxelPos != lastVoxelPos) {
+                Debug.Log($"last voxel pos changed from {lastVoxelPos} to {voxelPos}");
+                lastVoxelPos2 = lastVoxelPos;
+                lastVoxelPos = voxelPos;
+            }
+            int2 chunkPos = FindContainingChunk(stepPos);
+            //Debug.Log($"stepPos: {stepPos} chunkPos: {chunkPos}");
+            VoxelChunk chunk = voxelChunks[chunkPos.x, chunkPos.y];
+            int lookup = chunk.LookupVoxel(voxelPos);
+
+            if (lookup != 0)
+            {
+                hitData.worldVoxelPos = voxelPos;
+                hitData.hitNormal = lastVoxelPos2 - voxelPos;
+                Debug.Log($"hitdata normal: {hitData.hitNormal}");
+                hitData.blockID = lookup;
+                hitData.didHit = true;
+                return hitData;
+            }
+        }
+        return hitData;
+
+    }
+
+    private int2 FindContainingChunk(Vector3 voxelWorldPos)
+    {
+        return new int2(Mathf.FloorToInt(voxelWorldPos.x / Spacing), Mathf.FloorToInt(voxelWorldPos.z / Spacing));
+    }
+
+    private Vector3Int WorldPosToVoxel(Vector3 worldPos)
+    {
+        Vector3 localPos = worldPos - transform.position;
+        Vector3Int result = new Vector3Int(Mathf.RoundToInt(localPos.x), Mathf.RoundToInt(localPos.y), Mathf.RoundToInt(localPos.z));
+        return result;
     }
 }

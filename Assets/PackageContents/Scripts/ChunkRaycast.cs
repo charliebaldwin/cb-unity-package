@@ -53,11 +53,11 @@ public class ChunkRaycast : MonoBehaviour
     {
         if (Input.GetMouseButtonDown(0))
         {
-            DoRaycast2(0);
+            DoRaycast3(0);
         } 
         else if ( Input.GetMouseButtonDown(1)) 
         {
-            DoRaycast2(1);
+            DoRaycast3(1);
         }
 
         if (Input.GetKeyDown(KeyCode.Alpha1))
@@ -91,7 +91,7 @@ public class ChunkRaycast : MonoBehaviour
         colliderEnterPoints = new List<Vector3>();
         colliderExitPoints = new List<Vector3>();
 
-        Debug.Log("starting raycast");
+        //Debug.Log("starting raycast");
 
         bool complete = false;
         int i = 0;
@@ -119,16 +119,20 @@ public class ChunkRaycast : MonoBehaviour
                     switch(mode)
                     {
                         case 0:
-                            hitChunk.BreakBlock(voxelHitData.worldVoxelPos);
+                            VoxelWorld.Instance.DestroyVoxel(voxelHitData.worldVoxelPos);
+                            //hitChunk.BreakBlock(voxelHitData.worldVoxelPos);
                             break;
                         case 1:
-                            hitChunk.PlaceBlock(voxelHitData.worldVoxelPos, voxelHitData.hitNormal, placedBlockType);
+                            //Debug.Log($"placing block at {voxelHitData.worldVoxelPos + voxelHitData.hitNormal} (normal: {voxelHitData.hitNormal})");
+                            VoxelWorld.Instance.AddVoxel(voxelHitData.worldVoxelPos + voxelHitData.hitNormal, placedBlockType);
+                            //hitChunk.PlaceBlock(voxelHitData.worldVoxelPos, voxelHitData.hitNormal, placedBlockType);
                             break;
                         default:
                             break;
 
                     }
-                    Debug.Log($"chunk {i} hit");
+                    // Debug.Log($"chunk {i} hit");
+                    //Debug.Log($"hit normal: {voxelHitData.hitNormal}");
                     didHitVox = true;
                     hitVoxPos = voxelHitData.hitPos;
                     debugRayEnd = voxelHitData.hitPos;
@@ -140,7 +144,7 @@ public class ChunkRaycast : MonoBehaviour
                 {
                     colliderExitPoints.Add(voxelHitData.hitPos);
                     debugRayEnd = voxelHitData.hitPos;
-                    Debug.Log($"chunk {i} missed");
+                    //Debug.Log($"chunk {i} missed");
                 }
             }
             else
@@ -148,6 +152,25 @@ public class ChunkRaycast : MonoBehaviour
                 Debug.Log($"raycast missed after {i} attempts");
                 didHitVox = false;
                 complete = true;
+            }
+        }
+    }
+
+    private void DoRaycast3(int mode)
+    {
+        VoxelHitData hitData = VoxelWorld.Instance.VoxelRaycast(transform.position, transform.forward, 8f, 300);
+        print(hitData.blockID);
+        if (hitData.didHit)
+        {
+            switch (mode)
+            {
+                case 0:
+                    VoxelWorld.Instance.DestroyVoxel(hitData.worldVoxelPos);
+                    break;
+                case 1:
+                    VoxelWorld.Instance.AddVoxel(hitData.worldVoxelPos + hitData.hitNormal, placedBlockType);
+                    Debug.Log($"normal: {hitData.hitNormal}"); 
+                    break;
             }
         }
     }
