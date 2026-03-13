@@ -296,7 +296,7 @@ public class VoxelChunk : MonoBehaviour
 
         VoxelHitData hitData = new VoxelHitData(false);
 
-        Vector3 stepPos = origin;
+        Vector3 stepPos = origin + 0.03f * direction;
         Vector3Int lastVoxPos = WorldPosToVoxel(stepPos);
 
         for (int i = 0; i < stepCount; i++)
@@ -318,6 +318,7 @@ public class VoxelChunk : MonoBehaviour
                     hitData.didHit = true;
                     hitData.hitPos = stepPos;
                     hitData.localVoxelPos = voxPos;
+                    hitData.worldVoxelPos = voxPos + transform.position;
                     //DeleteVoxel(Compute, voxPos);
                     return hitData;
 
@@ -343,12 +344,13 @@ public class VoxelChunk : MonoBehaviour
         return hitData;
     }
 
-    public void BreakBlock(Vector3Int position)
+    public void BreakBlock(Vector3 worldPosition)
     {
-        DeleteVoxel(Compute, position);
+        DeleteVoxel(Compute, WorldPosToVoxel(worldPosition));
     }
-    public void PlaceBlock(Vector3Int position, Vector3Int normal, int blockType)
+    public void PlaceBlock(Vector3 worldPosition, Vector3Int normal, int blockType)
     {
+        Vector3Int position = WorldPosToVoxel(worldPosition);
         if (IsPosInGridBounds(position + normal, Size3D))
         {
             AddVoxel(Compute, position + normal, blockType);
@@ -397,6 +399,7 @@ public struct VoxelHitData
 {
     public bool didHit;
     public Vector3Int localVoxelPos;
+    public Vector3 worldVoxelPos;
     public Vector3 hitPos;
     public Vector3Int hitNormal;
 
@@ -404,6 +407,7 @@ public struct VoxelHitData
     {
         this.didHit = didHit;
         localVoxelPos = Vector3Int.zero;
+        worldVoxelPos = Vector3.zero;
         hitPos = Vector3.zero;
         hitNormal = Vector3Int.up;
     }

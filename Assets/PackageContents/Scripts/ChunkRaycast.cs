@@ -119,10 +119,10 @@ public class ChunkRaycast : MonoBehaviour
                     switch(mode)
                     {
                         case 0:
-                            hitChunk.BreakBlock(voxelHitData.localVoxelPos);
+                            hitChunk.BreakBlock(voxelHitData.worldVoxelPos);
                             break;
                         case 1:
-                            hitChunk.PlaceBlock(voxelHitData.localVoxelPos, voxelHitData.hitNormal, placedBlockType);
+                            hitChunk.PlaceBlock(voxelHitData.worldVoxelPos, voxelHitData.hitNormal, placedBlockType);
                             break;
                         default:
                             break;

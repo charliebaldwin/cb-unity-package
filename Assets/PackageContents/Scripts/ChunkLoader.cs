@@ -26,7 +26,8 @@ public class ChunkLoader : MonoBehaviour
         {
             for (int z = 0; z < InitialChunks.y; z++)
             {
-                LoadChunk(new int2(x, z));
+                VoxelWorld.Instance.AddChunk(new int2(x, z));
+               // LoadChunk(new int2(x, z));
             }
         }
     }
