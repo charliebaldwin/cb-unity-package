@@ -15,7 +15,7 @@ public class ChunkLoader : MonoBehaviour
     [ShowInInspector]
     private List<int2> chunks = new List<int2>();
     private VoxelChunk[,] voxelChunks;
-    private int spacing = 8;
+    private int spacing = 12;
 
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created

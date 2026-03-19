@@ -24,12 +24,13 @@ public class VoxelWorld : MonoBehaviour
         {
             Instance = this;
         }
+        voxelChunks = new VoxelChunk[WorldSize.x, WorldSize.y];
     }
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-        voxelChunks = new VoxelChunk[WorldSize.x, WorldSize.y];
+
     }
 
     // Update is called once per frame
@@ -40,9 +41,11 @@ public class VoxelWorld : MonoBehaviour
 
     public void AddChunk(int2 pos)
     {
+  
        // if (!chunks.Contains(pos))
         if (voxelChunks[pos.x, pos.y] == null)
         {
+            Debug.Log($"Adding chunk at ({pos.x},{pos.y})");
             //chunks.Add(pos);
             VoxelChunk newChunk = Instantiate(ChunkPrefab).GetComponent<VoxelChunk>();
             voxelChunks[pos.x, pos.y] = newChunk;
