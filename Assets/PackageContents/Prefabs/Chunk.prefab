@@ -65,7 +65,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Size: 10
-  Size3D: {x: 12, y: 24, z: 12}
+  Size3D: {x: 12, y: 12, z: 12}
   ChunkCoord:
     x: 0
     y: 0
@@ -74,8 +74,9 @@ MonoBehaviour:
   testTex: {fileID: 8400000, guid: 872718f75ec035e409a6b0c753718bba, type: 2}
   NoiseTranslate: {x: 0, y: 0, z: 0}
   NoiseScale: 0.04
-  NoiseThreshold: 0.1
+  NoiseThreshold: 1
   Compute: {fileID: 7200000, guid: 562654af9f1c3b846bbfbc6a73588e80, type: 3}
+  BufferReadDelay: 0.15
 --- !u!33 &131667949381789334
 MeshFilter:
   m_ObjectHideFlags: 0

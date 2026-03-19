@@ -29,7 +29,7 @@ void GenerateGrid (uint3 id : SV_DispatchThreadID)
         
 
         int index = ComputeIndex(pos, Size);
-        Voxels[index] = max(int(floor(n)), 0);
+        Voxels[index] = max(int(floor(n * Threshold)), 0);
     }
 
 }   
@@ -90,13 +90,15 @@ RWStructuredBuffer<float3> Vertices;
 RWStructuredBuffer<float3> Normals;
 RWStructuredBuffer<float4> Colors;
 RWStructuredBuffer<float2> TexCoords;
+RWStructuredBuffer<int> ThreadTest;
 
-[numthreads(16,1,16)]
+[numthreads(32,1,32)]
 void ComputeMesh (uint3 id : SV_DispatchThreadID)
 {
+
     
     for (uint y=0; y<Size.y; y++) {
-        uint3 pos = uint3(id.x % Size.x, y, id.z % Size.z);
+        uint3 pos = uint3(id.x % Size.x, y%Size.y, id.z % Size.z);
 
         //int index = 24*(pos.y + Size.y * pos.x + Size.y * Size.x * pos.z);
         uint voxIndex = ComputeIndex(pos, Size);
@@ -191,9 +193,9 @@ void ComputeMesh (uint3 id : SV_DispatchThreadID)
             }
         }
     }
+    int testIndex = (id.x%Size.x) + (id.z%Size.z) * Size.x;
+    ThreadTest[testIndex] = 1;
     
-
-
 }
 
 int3 DeletePos;
