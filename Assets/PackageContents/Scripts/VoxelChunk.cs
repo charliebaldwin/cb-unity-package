@@ -225,15 +225,13 @@ public class VoxelChunk : MonoBehaviour
         compute.SetBuffer(kernel, "Voxels", voxelBuffer);
         compute.SetBuffer(kernel, "ThreadTest", threadTestBuffer);
         compute.SetFloat("Threshold", NoiseThreshold);
-        compute.SetVector("Size", new Vector4(Size3D.x, Size3D.y, Size3D.z, 0.0f));
+        compute.SetVector("Size", new Vector4(Size3D.x, Size3D.y, Size3D.z, 1.0f));
 
         compute.SetBuffer(kernel, "Vertices", vBuffer);
         compute.SetBuffer(kernel, "Normals", nBuffer);
         compute.SetBuffer(kernel, "Colors", cBuffer);
         compute.SetBuffer(kernel, "TexCoords", tBuffer);
 
-
-        
         compute.Dispatch(kernel, Size3D.x, 1, Size3D.z);
 
         computeReadCoroutine = BufferReadTimer(BufferReadDelay);
@@ -280,9 +278,12 @@ public class VoxelChunk : MonoBehaviour
 
         //threadTestBuffer.Release();
 
-        
-
         Debug.Log($"Final mesh vertex count: {meshFilter.sharedMesh.vertexCount}");
+
+        vBuffer.Release();
+        nBuffer.Release();
+        cBuffer.Release();
+        tBuffer.Release();
     }
 
     private Vector3[] TrimArrayVec3(Vector3[] array)
@@ -324,7 +325,7 @@ public class VoxelChunk : MonoBehaviour
 
     private int[] GenerateIndices(int vertexCount)
     {
-        int[] result = new int[(vertexCount / 4) * 12];
+        int[] result = new int[(vertexCount / 4) * 6];
         for (int i=0; i < vertexCount/4; i++)
         {
             result[i * 6 + 0] = i * 4 + 0;

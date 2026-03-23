@@ -31,7 +31,7 @@ void GenerateGrid (uint3 id : SV_DispatchThreadID)
 
         int index = ComputeIndex(pos, Size);
         Voxels[index] = max(int(floor(n * Threshold)), 0);
-        //Voxels[index] = 1;
+        Voxels[index] = 1;
     }
 
 }   
@@ -101,7 +101,7 @@ void ComputeMesh (uint3 id : SV_DispatchThreadID)
     
     for (uint y=0; y<Size.y; y++) {
       //  uint3 pos = uint3(id.x % Size.x, y%Size.y, id.z % Size.z);
-        uint3 pos = uint3(id.x % 12, y % 24, id.z % 12);
+        uint3 pos = uint3(id.x % 12, y % 20, id.z % 12);
 
         //int index = 24*(pos.y + Size.y * pos.x + Size.y * Size.x * pos.z);
         uint voxIndex = ComputeIndex(pos, Size);
@@ -109,6 +109,8 @@ void ComputeMesh (uint3 id : SV_DispatchThreadID)
 
         //float voxel = VoxelTex[pos].x;
         uint voxel = Voxels[voxIndex];
+
+        float4 threadColor = float4(float(id.x%12) / Size.x, float(y%19) / Size.y, float(id.z%12) / Size.z, 1.0);
         
 
         if (voxel > 0) {
@@ -150,7 +152,7 @@ void ComputeMesh (uint3 id : SV_DispatchThreadID)
                 for(int i=0; i<4; i++) {
                     Vertices[index + i] = faceVertsNX[i] + pos;
                     Normals[index + i] = faceNormNX;
-                    Colors[index + i] = idColors[voxel];
+                    Colors[index + i] = threadColor;//idColors[voxel];
                     TexCoords[index + i] = faceTexNX[3-i];
                 }
             }
@@ -158,7 +160,7 @@ void ComputeMesh (uint3 id : SV_DispatchThreadID)
                 for(int i=0; i<4; i++) {
                     Vertices[index + i + 4] = faceVertsPX[i] + pos;
                     Normals[index + i + 4] = faceNormPX;
-                    Colors[index + i + 4] = idColors[voxel];
+                    Colors[index + i + 4] = threadColor;//idColors[voxel];
                     TexCoords[index + i + 4] = faceTexPX[3-i];
                 }
             }
@@ -166,7 +168,7 @@ void ComputeMesh (uint3 id : SV_DispatchThreadID)
                 for(int i=0; i<4; i++) {
                     Vertices[index + i + 8] = faceVertsNY[i] + pos;
                     Normals[index + i + 8] = faceNormNY;
-                    Colors[index + i + 8] = idColors[voxel];
+                    Colors[index + i + 8] = threadColor;//idColors[voxel];
                     TexCoords[index + i + 8] = faceTexNY[3-i];
                 }
             }
@@ -174,7 +176,7 @@ void ComputeMesh (uint3 id : SV_DispatchThreadID)
                 for(int i=0; i<4; i++) {
                     Vertices[index + i + 12] = faceVertsPY[i] + pos;
                     Normals[index + i + 12] = faceNormPY;
-                    Colors[index + i + 12] = idColors[voxel];
+                    Colors[index + i + 12] = threadColor;//idColors[voxel];
                     TexCoords[index + i + 12] = faceTexPY[3-i];
                 }
             }
@@ -182,7 +184,7 @@ void ComputeMesh (uint3 id : SV_DispatchThreadID)
                 for(int i=0; i<4; i++) {
                     Vertices[index + i + 16] = faceVertsNZ[i] + pos;
                     Normals[index + i + 16] = faceNormNZ;
-                    Colors[index + i + 16] = idColors[voxel];
+                    Colors[index + i + 16] = threadColor;//idColors[voxel];
                     TexCoords[index + i + 16] = faceTexNZ[3-i];
                 }
             }
@@ -190,7 +192,7 @@ void ComputeMesh (uint3 id : SV_DispatchThreadID)
                 for(int i=0; i<4; i++) {
                     Vertices[index + i + 20] = faceVertsPZ[i] + pos;
                     Normals[index + i + 20] = faceNormPZ;
-                    Colors[index + i + 20] = idColors[voxel];
+                    Colors[index + i + 20] = threadColor;//idColors[voxel];
                     TexCoords[index + i + 20] = faceTexPZ[3-i];
                 }
             }
