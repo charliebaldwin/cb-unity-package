@@ -65,7 +65,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Size: 10
-  Size3D: {x: 12, y: 12, z: 12}
+  Size3D: {x: 12, y: 24, z: 12}
   ChunkCoord:
     x: 0
     y: 0

@@ -12,11 +12,12 @@ float Threshold;
 float3 TranslateNoise;
 
 int ComputeIndex(uint3 pos, uint3 size) {
-    return (pos.x % size.x) + size.x * (pos.y % size.y) + size.x * size.y * (pos.z % size.z);
+    //return (pos.x % size.x) + size.x * (pos.y % size.y) + size.x * size.y * (pos.z % size.z);
+    return (pos.x) + size.x * (pos.y) + size.x * size.y * (pos.z);
 }
 
 
-[numthreads(16,1,16)]
+[numthreads(32,1,32)]
 void GenerateGrid (uint3 id : SV_DispatchThreadID)
 {
     for (uint y=0; y<Size.y; y++) {
@@ -30,6 +31,7 @@ void GenerateGrid (uint3 id : SV_DispatchThreadID)
 
         int index = ComputeIndex(pos, Size);
         Voxels[index] = max(int(floor(n * Threshold)), 0);
+        //Voxels[index] = 1;
     }
 
 }   
@@ -98,7 +100,8 @@ void ComputeMesh (uint3 id : SV_DispatchThreadID)
 
     
     for (uint y=0; y<Size.y; y++) {
-        uint3 pos = uint3(id.x % Size.x, y%Size.y, id.z % Size.z);
+      //  uint3 pos = uint3(id.x % Size.x, y%Size.y, id.z % Size.z);
+        uint3 pos = uint3(id.x % 12, y % 24, id.z % 12);
 
         //int index = 24*(pos.y + Size.y * pos.x + Size.y * Size.x * pos.z);
         uint voxIndex = ComputeIndex(pos, Size);
@@ -118,28 +121,28 @@ void ComputeMesh (uint3 id : SV_DispatchThreadID)
             uint vox_pz = 0;
 
             if (pos.x > 0) {
-                //vox_nx = VoxelTex[pos + float3(-1.0, 0.0, 0.0)].x;
-                vox_nx = Voxels[voxIndex - 1];
+                vox_nx = Voxels[ComputeIndex(pos + float3(-1.0, 0.0, 0.0), Size)];
+                //vox_nx = Voxels[voxIndex - 1];
             }
             if (pos.x < Size.x - 1){
-                //vox_px = VoxelTex[pos + float3(1.0, 0.0, 0.0)].x;
-                vox_px = Voxels[voxIndex + 1];
+                vox_px = Voxels[ComputeIndex(pos + float3(1.0, 0.0, 0.0), Size)];
+                //vox_px = Voxels[voxIndex + 1];
             }
             if (pos.y > 0) {
-                //vox_ny = VoxelTex[pos + float3(0.0, -1.0, 0.0)].x;
-                vox_ny = Voxels[voxIndex - Size.x];
+                vox_ny = Voxels[ComputeIndex(pos + float3(0.0, -1.0, 0.0), Size)];
+                //vox_ny = Voxels[voxIndex - Size.x];
             }
             if (pos.y < Size.y - 1){
-                //vox_py = VoxelTex[pos + float3(0.0, 1.0, 0.0)].x;
-                vox_py = Voxels[voxIndex + Size.x];
+                vox_py = Voxels[ComputeIndex(pos + float3(0.0, 1.0, 0.0), Size)];
+                //vox_py = Voxels[voxIndex + Size.x];
             }
             if (pos.z > 0) {
-                //vox_nz = VoxelTex[pos + float3(0.0, 0.0, -1.0)].x;
-                vox_nz = Voxels[voxIndex - Size.x * Size.y];
+                vox_nz = Voxels[ComputeIndex(pos + float3(0.0, 0.0, -1.0), Size)];
+                //vox_nz = Voxels[voxIndex - Size.x * Size.y];
             }
             if (pos.z < Size.z - 1){
-                //vox_pz = VoxelTex[pos + float3(0.0, 0.0, 1.0)].x;
-                vox_pz = Voxels[voxIndex + Size.x * Size.y];
+                vox_pz = Voxels[ComputeIndex(pos + float3(0.0, 0.0, 1.0), Size)];
+                //vox_pz = Voxels[voxIndex + Size.x * Size.y];
             }
 
 

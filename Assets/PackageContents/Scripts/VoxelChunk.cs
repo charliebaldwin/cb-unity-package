@@ -111,15 +111,40 @@ public class VoxelChunk : MonoBehaviour
             Gizmos.DrawSphere(tempOrigin, 0.5f);
         }
 
+        //for (int x = 0; x < Size3D.x; x++)
+        //{
+        //    for (int z = 0; z < Size3D.z; z++)
+        //    {
+        //        if (threadTest[x, z] == 1)
+        //        {
+        //            Gizmos.DrawCube(transform.position + new Vector3(x, 0f, z), Vector3.one);
+        //        }
+        //    }
+        //}
         for (int x = 0; x < Size3D.x; x++)
         {
-            for (int z = 0; z < Size3D.z; z++)
+            for (int y = 0; y < Size3D.y; y++)
             {
-                if (threadTest[x, z] == 1)
+                for (int z = 0; z < Size3D.z; z++)
                 {
-                    Gizmos.DrawCube(transform.position + new Vector3(x, 0f, z), Vector3.one);
+                    if (voxelData[x,y,z] > 0)
+                    {
+                        switch (voxelData[x, y, z])
+                        {
+                            case 1:
+                                Gizmos.color = Color.red; break;
+                            case 2:
+                                Gizmos.color = Color.green; break;
+                            case 3:
+                                Gizmos.color = Color.blue; break;
+                        }
+
+                        Gizmos.DrawCube(new Vector3(x, y,z) + transform.position, Vector3.one);
+                    }
+
                 }
             }
+            
         }
     }
 
@@ -236,10 +261,10 @@ public class VoxelChunk : MonoBehaviour
         tBuffer.GetData(tData);
         threadTestBuffer.GetData(testData);
 
-        vData = TrimArray(vData);
-        nData = TrimArray(nData);
-        cData = TrimArray(cData);
-        tData = TrimArray(tData);
+        //vData = TrimArray(vData);
+        //nData = TrimArray(nData);
+        //cData = TrimArray(cData);
+        //tData = TrimArray(tData);
 
         Debug.Log($"Trimmed data length: {vData.Length}");
         meshFilter.sharedMesh = null;
@@ -255,21 +280,7 @@ public class VoxelChunk : MonoBehaviour
 
         //threadTestBuffer.Release();
 
-        for (int x= 0; x < Size3D.x; x++)
-        {
-            for (int z=0; z < Size3D.z; z++)
-            {
-                threadTest[x, z] = testData[x + Size3D.x * z];
-                if (threadTest[x, z] == 1)
-                {
-                    Debug.Log($"thread at ({x}, {z}) loaded");
-                } 
-                else
-                {
-                    Debug.Log($"thread at ({x}, {z}) NOT loaded (0)");
-                }
-            }
-        }
+        
 
         Debug.Log($"Final mesh vertex count: {meshFilter.sharedMesh.vertexCount}");
     }
@@ -313,7 +324,7 @@ public class VoxelChunk : MonoBehaviour
 
     private int[] GenerateIndices(int vertexCount)
     {
-        int[] result = new int[(vertexCount / 4) * 6];
+        int[] result = new int[(vertexCount / 4) * 12];
         for (int i=0; i < vertexCount/4; i++)
         {
             result[i * 6 + 0] = i * 4 + 0;
