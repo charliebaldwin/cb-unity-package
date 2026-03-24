@@ -242,17 +242,50 @@ public class VoxelChunk : MonoBehaviour
         cBuffer.GetData(cData);
         tBuffer.GetData(tData);
 
-        vData = TrimArrayVec3(vData);
-        nData = TrimArrayVec3(nData);
-        cData = TrimArrayColor(cData);
-        tData = TrimArrayVec2(tData);
+        //List<int> indicesToTrim = GetTrimIndices(vData);
+        //List<Vector3> vList = vData.ToList();
+        //List<Vector3> nList = nData.ToList();
+        //List<Color> cList = cData.ToList();
+        //List<Vector2> tList = tData.ToList();
+        //for(int i=indicesToTrim.Count-1; i>=0; i--)
+        //{
+        //    vList.RemoveAt(indicesToTrim[i]);
+        //    nList.RemoveAt(indicesToTrim[i]);
+        //    cList.RemoveAt(indicesToTrim[i]);
+        //    tList.RemoveAt(indicesToTrim[i]);
+        //}
+        //vData = vList.ToArray();
+        //nData = nList.ToArray();
+        //cData = cList.ToArray();
+        //tData = tList.ToArray();
+
+        List<int> validIndices = GetValidIndices(vData);
+
+        Vector3[] vDataTrimmed = new Vector3[validIndices.Count];
+        Vector3[] nDataTrimmed = new Vector3[validIndices.Count];
+        Color[] cDataTrimmed = new Color[validIndices.Count];
+        Vector2[] tDataTrimmed = new Vector2[validIndices.Count];
+        for (int i = 0; i < validIndices.Count; i++)
+        {
+            vDataTrimmed[i] = vData[validIndices[i]];
+            nDataTrimmed[i] = nData[validIndices[i]];
+            cDataTrimmed[i] = cData[validIndices[i]];
+            tDataTrimmed[i] = tData[validIndices[i]];
+        }
+
+        //vData = TrimArrayVec3(vData);
+        //nData = TrimArrayVec3(nData);
+        //cData = TrimArrayColor(cData);
+        //tData = TrimArrayVec2(tData);
+
+       
 
         meshFilter.mesh.Clear();
-        meshFilter.mesh.vertices = vData;
-        meshFilter.mesh.uv = tData;
-        meshFilter.mesh.normals = nData;
-        meshFilter.mesh.colors = cData;
-        meshFilter.mesh.triangles = GenerateIndices(vData.Length);
+        meshFilter.mesh.vertices = vDataTrimmed;
+        meshFilter.mesh.uv = tDataTrimmed;
+        meshFilter.mesh.normals = nDataTrimmed;
+        meshFilter.mesh.colors = cDataTrimmed;
+        meshFilter.mesh.triangles = GenerateIndices(vDataTrimmed.Length);
         meshFilter.mesh.RecalculateBounds();
 
         Debug.Log($"Final mesh vertex count: {meshFilter.mesh.vertexCount}");
@@ -310,6 +343,19 @@ public class VoxelChunk : MonoBehaviour
             }
         }
         return trimmedList.ToArray();
+    }
+
+    private List<int> GetValidIndices(Vector3[] array)
+    {
+        List<int> result = new List<int>();
+        for (int i = 0; i < array.Length; i++)
+        {
+            if (array[i] != null && array[i] != Vector3.zero)
+            {
+                result.Add(i);
+            }
+        }
+        return result;
     }
     private int[] GenerateIndices(int vertexCount)
     {

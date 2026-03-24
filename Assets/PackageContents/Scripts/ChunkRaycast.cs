@@ -6,6 +6,9 @@ public class ChunkRaycast : MonoBehaviour
 {
     public LayerMask mask;
     public float Distance = 20f;
+    public int Steps = 300;
+
+    public GameObject Cursor;
 
     private Vector3 debugRayStart;
     private Vector3 debugRayEnd;
@@ -54,11 +57,14 @@ public class ChunkRaycast : MonoBehaviour
     {
         if (Input.GetMouseButtonDown(0))
         {
-            DoRaycast3(0);
+            DoRaycast3(1);
         } 
         else if ( Input.GetMouseButtonDown(1)) 
         {
-            DoRaycast3(1);
+            DoRaycast3(2);
+        } else
+        {
+            DoRaycast3(0);
         }
 
         if (Input.GetKeyDown(KeyCode.Alpha1))
@@ -160,19 +166,28 @@ public class ChunkRaycast : MonoBehaviour
     private void DoRaycast3(int mode)
     {
         VoxelHitData hitData = VoxelWorld.Instance.VoxelRaycast(transform.position, transform.forward, Distance, 300);
-        print(hitData.blockID);
+        //print(hitData.blockID);
         if (hitData.didHit)
         {
+            Cursor.SetActive(true);
             switch (mode)
             {
                 case 0:
-                    VoxelWorld.Instance.DestroyVoxel(hitData.worldVoxelPos);
+                    Cursor.transform.position = hitData.worldVoxelPos;
+                    Cursor.transform.forward = hitData.hitNormal;
                     break;
                 case 1:
+                    VoxelWorld.Instance.DestroyVoxel(hitData.worldVoxelPos);
+                    break;
+                case 2:
                     VoxelWorld.Instance.AddVoxel(hitData.worldVoxelPos + hitData.hitNormal, placedBlockType);
                     Debug.Log($"normal: {hitData.hitNormal}"); 
                     break;
             }
+        } 
+        else
+        {
+            Cursor.SetActive(false);
         }
     }
 }

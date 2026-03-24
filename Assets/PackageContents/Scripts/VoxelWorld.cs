@@ -42,16 +42,22 @@ public class VoxelWorld : MonoBehaviour
 
     public void AddChunk(int2 pos)
     {
-  
-       // if (!chunks.Contains(pos))
-        if (voxelChunks[pos.x, pos.y] == null)
+
+        try
         {
-            Debug.Log($"Adding chunk at ({pos.x},{pos.y})");
-            //chunks.Add(pos);
-            VoxelChunk newChunk = Instantiate(ChunkPrefab).GetComponent<VoxelChunk>();
-            voxelChunks[pos.x, pos.y] = newChunk;
-            newChunk.ChunkCoord = pos;
-            newChunk.transform.position = new Vector3(pos.x, 0, pos.y) * Spacing;
+            if (voxelChunks[pos.x, pos.y] == null)
+            {
+                Debug.Log($"Adding chunk at ({pos.x},{pos.y})");
+                //chunks.Add(pos);
+                VoxelChunk newChunk = Instantiate(ChunkPrefab).GetComponent<VoxelChunk>();
+                voxelChunks[pos.x, pos.y] = newChunk;
+                newChunk.ChunkCoord = pos;
+                newChunk.transform.position = new Vector3(pos.x, 0, pos.y) * Spacing;
+            }
+        }
+        catch (IndexOutOfRangeException ex) 
+        {
+            return;
         }
     }
 
@@ -81,7 +87,7 @@ public class VoxelWorld : MonoBehaviour
             stepPos += d;
             Vector3Int voxelPos = WorldPosToVoxel(stepPos);
             if (voxelPos != lastVoxelPos) {
-                Debug.Log($"last voxel pos changed from {lastVoxelPos} to {voxelPos}");
+                //Debug.Log($"last voxel pos changed from {lastVoxelPos} to {voxelPos}");
                 lastVoxelPos2 = lastVoxelPos;
                 lastVoxelPos = voxelPos;
             }
@@ -96,15 +102,19 @@ public class VoxelWorld : MonoBehaviour
                 {
                     hitData.worldVoxelPos = voxelPos;
                     hitData.hitNormal = lastVoxelPos2 - voxelPos;
-                    Debug.Log($"hitdata normal: {hitData.hitNormal}");
+                    //Debug.Log($"hitdata normal: {hitData.hitNormal}");
                     hitData.blockID = lookup;
                     hitData.didHit = true;
                     return hitData;
                 }
-            } 
+            }
             catch (NullReferenceException ex)
             {
                 Debug.Log($"No chunk at ({chunkPos.x}, {chunkPos.y})");
+            }
+            catch (IndexOutOfRangeException ex)
+            {
+
             }
             
             
