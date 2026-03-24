@@ -68,12 +68,12 @@ public class PlayerController : MonoBehaviour
         bool grounded = charController.isGrounded;
 
         Vector3 newMotion = Vector3.zero;
-        newMotion += walkInput.x * currentMoveSpeed * transform.right * Time.deltaTime;
-        newMotion += walkInput.z * currentMoveSpeed * transform.forward * Time.deltaTime;
+        newMotion += walkInput.x * currentMoveSpeed * transform.right;
+        newMotion += walkInput.z * currentMoveSpeed * transform.forward;
 
 
         // FLYING
-        newMotion += walkInput.y * currentMoveSpeed * transform.up * Time.deltaTime;
+        newMotion += walkInput.y * currentMoveSpeed * transform.up;
 
         motion = Vector3.Lerp(motion, newMotion, grounded ? 1f : airborneControl);
         //motion.y = ComputeGravity();

@@ -13,7 +13,6 @@ public class VoxelChunk : MonoBehaviour
 {
     public static bool DrawDebugs = false;
 
-    public int Size = 3;
     public Vector3Int Size3D = new Vector3Int(16,32,16);
     private int bufferSizeMult = 24;
     ComputeBuffer cBuffer;
@@ -21,10 +20,7 @@ public class VoxelChunk : MonoBehaviour
     ComputeBuffer nBuffer; 
     ComputeBuffer tBuffer;
     ComputeBuffer voxelBuffer;
-    ComputeBuffer threadTestBuffer;
     
-
-    private int[,] threadTest;
 
     public int2 ChunkCoord;
     public ChunkLoader ChunkLoader;
@@ -139,7 +135,7 @@ public class VoxelChunk : MonoBehaviour
                                 Gizmos.color = Color.blue; break;
                         }
 
-                        Gizmos.DrawCube(new Vector3(x, y,z) + transform.position, Vector3.one);
+                      //  Gizmos.DrawCube(new Vector3(x, y,z) + transform.position, Vector3.one);
                     }
 
                 }
@@ -150,7 +146,7 @@ public class VoxelChunk : MonoBehaviour
 
     private void Update()
     {
-        Size3D.y = Mathf.Clamp(Size3D.y, 1, 64);
+        Size3D.y = Mathf.Clamp(Size3D.y, 1, 128);
 
         if (transform.position != lastPos || NoiseScale != lastScale || lastThresh != NoiseThreshold || lastSize != Size3D)
         {
@@ -159,7 +155,7 @@ public class VoxelChunk : MonoBehaviour
             lastThresh = NoiseThreshold;
             lastSize = Size3D;
 
-            VoxelNoise(Compute);
+            //VoxelNoise(Compute);
             GenerateMeshCompute(Compute);
 
             boxCollider.size = new Vector3(Size3D.x, Size3D.y, Size3D.z);
@@ -209,7 +205,6 @@ public class VoxelChunk : MonoBehaviour
 
     private void GenerateMeshCompute(ComputeShader compute)
     {
-        threadTest = new int[Size3D.x, Size3D.z];
 
         int size3d = Size3D.x * Size3D.y * Size3D.z;
         Debug.Log($"vertex buffer size: {24 * size3d}");
@@ -217,13 +212,15 @@ public class VoxelChunk : MonoBehaviour
         nBuffer = new ComputeBuffer(bufferSizeMult * size3d, 3 * sizeof(float));
         cBuffer = new ComputeBuffer(bufferSizeMult * size3d, 4 * sizeof(float));
         tBuffer = new ComputeBuffer(bufferSizeMult * size3d, 2 * sizeof(float));
+        voxelBuffer = new ComputeBuffer(Size3D.x * Size3D.y * Size3D.z, sizeof(uint));
 
-        threadTestBuffer = new ComputeBuffer(Size3D.x * Size3D.z, sizeof(int));
+        int[] flatVoxelData = ThreeDToFlatArray(voxelData, Size3D);
+        Debug.Log($"voxel buffer length: {flatVoxelData.Length}");
+        voxelBuffer.SetData(flatVoxelData);
 
         int kernel = compute.FindKernel("ComputeMesh");
 
         compute.SetBuffer(kernel, "Voxels", voxelBuffer);
-        compute.SetBuffer(kernel, "ThreadTest", threadTestBuffer);
         compute.SetFloat("Threshold", NoiseThreshold);
         compute.SetVector("Size", new Vector4(Size3D.x, Size3D.y, Size3D.z, 1.0f));
 
@@ -251,21 +248,18 @@ public class VoxelChunk : MonoBehaviour
         Vector3[] nData = new Vector3[bufferSizeMult * size3d];
         Color[] cData = new Color[bufferSizeMult * size3d];
         Vector2[] tData = new Vector2[bufferSizeMult * size3d];
-        int[] testData = new int[Size3D.x * Size3D.z];
 
         vBuffer.GetData(vData);
         nBuffer.GetData(nData);
         cBuffer.GetData(cData);
         tBuffer.GetData(tData);
-        threadTestBuffer.GetData(testData);
 
-        //vData = TrimArray(vData);
-        //nData = TrimArray(nData);
-        //cData = TrimArray(cData);
-        //tData = TrimArray(tData);
+        vData = TrimArrayVec3(vData);
+        nData = TrimArrayVec3(nData);
+        cData = TrimArrayColor(cData);
+        tData = TrimArrayVec2(tData);
 
-        Debug.Log($"Trimmed data length: {vData.Length}");
-        meshFilter.sharedMesh = null;
+        meshFilter.mesh = null;
         mesh = new Mesh();
         mesh.Clear();
         mesh.vertices = vData;
@@ -274,11 +268,11 @@ public class VoxelChunk : MonoBehaviour
         mesh.colors = cData;
         mesh.triangles = GenerateIndices(vData.Length);
         mesh.RecalculateBounds();
-        meshFilter.sharedMesh = mesh;
+        meshFilter.mesh = mesh;
 
         //threadTestBuffer.Release();
 
-        Debug.Log($"Final mesh vertex count: {meshFilter.sharedMesh.vertexCount}");
+        Debug.Log($"Final mesh vertex count: {meshFilter.mesh.vertexCount}");
 
         vBuffer.Release();
         nBuffer.Release();
@@ -292,6 +286,18 @@ public class VoxelChunk : MonoBehaviour
         for (int i = 0; i < array.Length; i++)
         {
             if (array[i] != null && array[i] != Vector3.zero)
+            {
+                trimmedList.Add(array[i]);
+            }
+        }
+        return trimmedList.ToArray();
+    }
+    private Vector2[] TrimArrayVec2(Vector2[] array)
+    {
+        List<Vector2> trimmedList = new List<Vector2>();
+        for (int i = 0; i < array.Length; i++)
+        {
+            if (array[i] != null && array[i] != Vector2.zero)
             {
                 trimmedList.Add(array[i]);
             }
@@ -326,7 +332,7 @@ public class VoxelChunk : MonoBehaviour
     private int[] GenerateIndices(int vertexCount)
     {
         int[] result = new int[(vertexCount / 4) * 6];
-        for (int i=0; i < vertexCount/4; i++)
+        for (int i=0; i < vertexCount/4 - 0; i++)
         {
             result[i * 6 + 0] = i * 4 + 0;
             result[i * 6 + 1] = i * 4 + 1;
@@ -334,6 +340,8 @@ public class VoxelChunk : MonoBehaviour
             result[i * 6 + 3] = i * 4 + 0;
             result[i * 6 + 4] = i * 4 + 2;
             result[i * 6 + 5] = i * 4 + 3;
+
+            //Debug.Log($"i={i}, tris are: {result[i * 6 + 0]}, {result[i * 6 + 1]}, {result[i * 6 + 2]}, {result[i * 6 + 3]}, {result[i * 6 + 4]}, {result[i * 6 + 5]}");
         }
         return result;
     }

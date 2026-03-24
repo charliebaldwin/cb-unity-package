@@ -5,6 +5,7 @@ using UnityEngine;
 public class ChunkRaycast : MonoBehaviour
 {
     public LayerMask mask;
+    public float Distance = 20f;
 
     private Vector3 debugRayStart;
     private Vector3 debugRayEnd;
@@ -158,7 +159,7 @@ public class ChunkRaycast : MonoBehaviour
 
     private void DoRaycast3(int mode)
     {
-        VoxelHitData hitData = VoxelWorld.Instance.VoxelRaycast(transform.position, transform.forward, 8f, 300);
+        VoxelHitData hitData = VoxelWorld.Instance.VoxelRaycast(transform.position, transform.forward, Distance, 300);
         print(hitData.blockID);
         if (hitData.didHit)
         {

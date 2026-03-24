@@ -64,8 +64,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4dd09311d58c1f44bb43a7989836bc93, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Size: 10
-  Size3D: {x: 12, y: 19, z: 12}
+  Size3D: {x: 16, y: 64, z: 16}
   ChunkCoord:
     x: 0
     y: 0
@@ -76,7 +75,7 @@ MonoBehaviour:
   NoiseScale: 0.04
   NoiseThreshold: 1
   Compute: {fileID: 7200000, guid: 562654af9f1c3b846bbfbc6a73588e80, type: 3}
-  BufferReadDelay: 0.15
+  BufferReadDelay: 0
 --- !u!33 &131667949381789334
 MeshFilter:
   m_ObjectHideFlags: 0
