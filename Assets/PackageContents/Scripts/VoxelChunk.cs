@@ -176,25 +176,16 @@ public class VoxelChunk : MonoBehaviour
     private void VoxelNoise(ComputeShader compute)
     {
 
-        int kernel = compute.FindKernel("GenerateGrid");
-
-        //voxelTex.Release();
-
-        //voxelTex.height = Size;
-        //voxelTex.width = Size;
-        //voxelTex.volumeDepth = Size;
-
-        //voxelTex.Create();
+        int kernel = compute.FindKernel("GenerateVoxels");
 
         voxelBuffer = new ComputeBuffer(Size3D.x * Size3D.y * Size3D.z, sizeof(int));
 
-
-        //compute.SetTexture(kernel, "VoxelTex", voxelTex);
         compute.SetBuffer(kernel, "Voxels", voxelBuffer);
         compute.SetVector("TranslateNoise", transform.position * NoiseScale);
         compute.SetFloat("Scale", NoiseScale);
         compute.SetVector("Size", new Vector4(Size3D.x, Size3D.y, Size3D.z, 0.0f));
         compute.SetFloat("Threshold", NoiseThreshold);
+
         compute.Dispatch(kernel, Size3D.x, 1, Size3D.z);
 
         int[] vData = new int[Size3D.x * Size3D.y * Size3D.z];
@@ -205,20 +196,15 @@ public class VoxelChunk : MonoBehaviour
 
     private void GenerateMeshCompute(ComputeShader compute)
     {
+        int kernel = compute.FindKernel("ComputeMesh");
 
         int size3d = Size3D.x * Size3D.y * Size3D.z;
-        Debug.Log($"vertex buffer size: {24 * size3d}");
+
         vBuffer = new ComputeBuffer(bufferSizeMult * size3d, 3 * sizeof(float));
         nBuffer = new ComputeBuffer(bufferSizeMult * size3d, 3 * sizeof(float));
         cBuffer = new ComputeBuffer(bufferSizeMult * size3d, 4 * sizeof(float));
         tBuffer = new ComputeBuffer(bufferSizeMult * size3d, 2 * sizeof(float));
-        voxelBuffer = new ComputeBuffer(Size3D.x * Size3D.y * Size3D.z, sizeof(uint));
 
-        int[] flatVoxelData = ThreeDToFlatArray(voxelData, Size3D);
-        Debug.Log($"voxel buffer length: {flatVoxelData.Length}");
-        voxelBuffer.SetData(flatVoxelData);
-
-        int kernel = compute.FindKernel("ComputeMesh");
 
         compute.SetBuffer(kernel, "Voxels", voxelBuffer);
         compute.SetFloat("Threshold", NoiseThreshold);
@@ -274,10 +260,10 @@ public class VoxelChunk : MonoBehaviour
 
         Debug.Log($"Final mesh vertex count: {meshFilter.mesh.vertexCount}");
 
-        vBuffer.Release();
-        nBuffer.Release();
-        cBuffer.Release();
-        tBuffer.Release();
+        //vBuffer.Release();
+        //nBuffer.Release();
+        //cBuffer.Release();
+        //tBuffer.Release();
     }
 
     private Vector3[] TrimArrayVec3(Vector3[] array)
