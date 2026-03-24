@@ -18,12 +18,19 @@ static const float3  NormPY = float3( 0.0, 1.0, 0.0);
 static const float3  NormNZ = float3( 0.0, 0.0,-1.0);
 static const float3  NormPZ = float3( 0.0, 0.0, 1.0);
 
-static const float2  TexNX[4] = { float2(0.001, 0.749), float2(0.249, 0.749), float2(0.249, 0.501), float2(0.001, 0.501)};
-static const float2  TexPX[4] = { float2(0.501, 0.749), float2(0.749, 0.749), float2(0.749, 0.501), float2(0.501, 0.501)};
-static const float2  TexNY[4] = { float2(0.251, 0.499), float2(0.499, 0.499), float2(0.499, 0.251), float2(0.251, 0.251)};
-static const float2  TexPY[4] = { float2(0.251, 0.999), float2(0.499, 0.999), float2(0.499, 0.751), float2(0.251, 0.751)};
-static const float2  TexNZ[4] = { float2(0.251, 0.749), float2(0.499, 0.749), float2(0.499, 0.501), float2(0.251, 0.501)};
-static const float2  TexPZ[4] = { float2(0.751, 0.749), float2(0.999, 0.749), float2(0.999, 0.501), float2(0.751, 0.501)};
+static const float2  TexNX2[4] = { float2(0.001, 0.749), float2(0.249, 0.749), float2(0.249, 0.501), float2(0.001, 0.501)};
+static const float2  TexPX2[4] = { float2(0.501, 0.749), float2(0.749, 0.749), float2(0.749, 0.501), float2(0.501, 0.501)};
+static const float2  TexNY2[4] = { float2(0.251, 0.499), float2(0.499, 0.499), float2(0.499, 0.251), float2(0.251, 0.251)};
+static const float2  TexPY2[4] = { float2(0.251, 0.999), float2(0.499, 0.999), float2(0.499, 0.751), float2(0.251, 0.751)};
+static const float2  TexNZ2[4] = { float2(0.251, 0.749), float2(0.499, 0.749), float2(0.499, 0.501), float2(0.251, 0.501)};
+static const float2  TexPZ2[4] = { float2(0.751, 0.749), float2(0.999, 0.749), float2(0.999, 0.501), float2(0.751, 0.501)};
+
+static const float2  TexNX[4] = { float2(0.001, 0.001), float2(0.001, 0.999), float2(0.999, 0.999), float2(0.999, 0.001)};
+static const float2  TexPX[4] = { float2(0.001, 0.001), float2(0.001, 0.999), float2(0.999, 0.999), float2(0.999, 0.001)};
+static const float2  TexNY[4] = { float2(0.001, 0.001), float2(0.001, 0.999), float2(0.999, 0.999), float2(0.999, 0.001)};
+static const float2  TexPY[4] = { float2(0.001, 0.001), float2(0.001, 0.999), float2(0.999, 0.999), float2(0.999, 0.001)};
+static const float2  TexNZ[4] = { float2(0.001, 0.001), float2(0.001, 0.999), float2(0.999, 0.999), float2(0.999, 0.001)};
+static const float2  TexPZ[4] = { float2(0.001, 0.001), float2(0.001, 0.999), float2(0.999, 0.999), float2(0.999, 0.001)};
 
 static const float4 idColors[4] = {
     float4(0.0,0.0,0.0,0.0),
@@ -121,7 +128,7 @@ void ComputeMesh (uint3 id : SV_DispatchThreadID)
                     Vertices[index + i] = VertsNX[i] + pos;
                     Normals[index + i] = NormNX;
                     Colors[index + i] = idColors[voxel];
-                    TexCoords[index + i] = TexNX[3-i];
+                    TexCoords[index + i] = TexNX[3-i] + float2(voxel, 0.);
                 }
             }
             if (vox_px == 0) {
@@ -129,7 +136,7 @@ void ComputeMesh (uint3 id : SV_DispatchThreadID)
                     Vertices[index + i + 4] = VertsPX[i] + pos;
                     Normals[index + i + 4] = NormPX;
                     Colors[index + i + 4] = idColors[voxel];
-                    TexCoords[index + i + 4] = TexPX[3-i];
+                    TexCoords[index + i + 4] = TexPX[3-i] + float2(voxel, 0.);
                 }
             }
             if (vox_ny == 0) {
@@ -137,7 +144,7 @@ void ComputeMesh (uint3 id : SV_DispatchThreadID)
                     Vertices[index + i + 8] = VertsNY[i] + pos;
                     Normals[index + i + 8] = NormNY;
                     Colors[index + i + 8] = idColors[voxel];
-                    TexCoords[index + i + 8] = TexNY[3-i];
+                    TexCoords[index + i + 8] = TexNY[3-i] + float2(voxel, 0.);
                 }
             }
             if (vox_py == 0) {
@@ -145,7 +152,7 @@ void ComputeMesh (uint3 id : SV_DispatchThreadID)
                     Vertices[index + i + 12] = VertsPY[i] + pos;
                     Normals[index + i + 12] = NormPY;
                     Colors[index + i + 12] = idColors[voxel];
-                    TexCoords[index + i + 12] = TexPY[3-i];
+                    TexCoords[index + i + 12] = TexPY[3-i] + float2(voxel, 0.);
                 }
             }
             if (vox_nz == 0) {
@@ -153,7 +160,7 @@ void ComputeMesh (uint3 id : SV_DispatchThreadID)
                     Vertices[index + i + 16] = VertsNZ[i] + pos;
                     Normals[index + i + 16] = NormNZ;
                     Colors[index + i + 16] = idColors[voxel];
-                    TexCoords[index + i + 16] = TexNZ[3-i];
+                    TexCoords[index + i + 16] = TexNZ[3-i] + float2(voxel, 0.);
                 }
             }
             if (vox_pz == 0) {
@@ -161,7 +168,7 @@ void ComputeMesh (uint3 id : SV_DispatchThreadID)
                     Vertices[index + i + 20] = VertsPZ[i] + pos;
                     Normals[index + i + 20] = NormPZ;
                     Colors[index + i + 20] = idColors[voxel];
-                    TexCoords[index + i + 20] = TexPZ[3-i];
+                    TexCoords[index + i + 20] = TexPZ[3-i] + float2(voxel, 0.);
                 }
             }
         }

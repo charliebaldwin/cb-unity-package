@@ -76,8 +76,8 @@ public class VoxelChunk : MonoBehaviour
 
     private void Start()
     {
-        VoxelNoise(Compute);
-        GenerateMeshCompute(Compute);
+        GenerateVoxels(Compute);
+        ComputeMesh(Compute);
 
     }
 
@@ -156,7 +156,7 @@ public class VoxelChunk : MonoBehaviour
             lastSize = Size3D;
 
             //VoxelNoise(Compute);
-            GenerateMeshCompute(Compute);
+            ComputeMesh(Compute);
 
             boxCollider.size = new Vector3(Size3D.x, Size3D.y, Size3D.z);
             boxCollider.center = boxCollider.size * 0.5f - new Vector3(0.5f,0.5f,0.5f);
@@ -173,7 +173,7 @@ public class VoxelChunk : MonoBehaviour
     }
 
 
-    private void VoxelNoise(ComputeShader compute)
+    private void GenerateVoxels(ComputeShader compute)
     {
 
         int kernel = compute.FindKernel("GenerateVoxels");
@@ -194,7 +194,7 @@ public class VoxelChunk : MonoBehaviour
 
     }
 
-    private void GenerateMeshCompute(ComputeShader compute)
+    private void ComputeMesh(ComputeShader compute)
     {
         int kernel = compute.FindKernel("ComputeMesh");
 
@@ -217,8 +217,10 @@ public class VoxelChunk : MonoBehaviour
 
         compute.Dispatch(kernel, Size3D.x, 1, Size3D.z);
 
-        computeReadCoroutine = BufferReadTimer(BufferReadDelay);
-        StartCoroutine(computeReadCoroutine); 
+        //computeReadCoroutine = BufferReadTimer(BufferReadDelay);
+        //StartCoroutine(computeReadCoroutine); 
+
+        ReadBufferData();
     }
 
     private IEnumerator BufferReadTimer(float duration)
@@ -245,18 +247,13 @@ public class VoxelChunk : MonoBehaviour
         cData = TrimArrayColor(cData);
         tData = TrimArrayVec2(tData);
 
-        meshFilter.mesh = null;
-        mesh = new Mesh();
-        mesh.Clear();
-        mesh.vertices = vData;
-        mesh.uv = tData;
-        mesh.normals = nData;
-        mesh.colors = cData;
-        mesh.triangles = GenerateIndices(vData.Length);
-        mesh.RecalculateBounds();
-        meshFilter.mesh = mesh;
-
-        //threadTestBuffer.Release();
+        meshFilter.mesh.Clear();
+        meshFilter.mesh.vertices = vData;
+        meshFilter.mesh.uv = tData;
+        meshFilter.mesh.normals = nData;
+        meshFilter.mesh.colors = cData;
+        meshFilter.mesh.triangles = GenerateIndices(vData.Length);
+        meshFilter.mesh.RecalculateBounds();
 
         Debug.Log($"Final mesh vertex count: {meshFilter.mesh.vertexCount}");
 
@@ -314,7 +311,6 @@ public class VoxelChunk : MonoBehaviour
         }
         return trimmedList.ToArray();
     }
-
     private int[] GenerateIndices(int vertexCount)
     {
         int[] result = new int[(vertexCount / 4) * 6];
@@ -327,11 +323,9 @@ public class VoxelChunk : MonoBehaviour
             result[i * 6 + 4] = i * 4 + 2;
             result[i * 6 + 5] = i * 4 + 3;
 
-            //Debug.Log($"i={i}, tris are: {result[i * 6 + 0]}, {result[i * 6 + 1]}, {result[i * 6 + 2]}, {result[i * 6 + 3]}, {result[i * 6 + 4]}, {result[i * 6 + 5]}");
         }
         return result;
     }
-
     private int[,,] FlatTo3DArray(int[] flat, Vector3Int dimensions)
     {
         int[,,] result = new int[dimensions.x, dimensions.y, dimensions.z];
@@ -451,7 +445,7 @@ public class VoxelChunk : MonoBehaviour
         voxelData[voxPosition.x, voxPosition.y, voxPosition.z] = 0;
         voxelBuffer.SetData(ThreeDToFlatArray(voxelData, Size3D));
 
-        GenerateMeshCompute(Compute);
+        ComputeMesh(Compute);
     }
     private void AddVoxel (ComputeShader compute, Vector3Int voxPosition, int blockType)
     {
@@ -460,7 +454,7 @@ public class VoxelChunk : MonoBehaviour
             voxelData[voxPosition.x, voxPosition.y, voxPosition.z] = blockType;
             voxelBuffer.SetData(ThreeDToFlatArray(voxelData, Size3D));
 
-            GenerateMeshCompute(Compute);
+            ComputeMesh(Compute);
         }
     }
 

@@ -793,7 +793,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ChunkPrefab: {fileID: 3265665669344878959, guid: afa5dac21cadea249be601a26864fbd9, type: 3}
   Radius: 0
-  InitialChunks: {x: 8, y: 8}
+  InitialChunks: {x: 4, y: 4}
 --- !u!4 &1977997080
 Transform:
   m_ObjectHideFlags: 0
