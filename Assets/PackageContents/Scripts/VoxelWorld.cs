@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Unity.Mathematics;
 using UnityEngine;
@@ -84,20 +85,29 @@ public class VoxelWorld : MonoBehaviour
                 lastVoxelPos2 = lastVoxelPos;
                 lastVoxelPos = voxelPos;
             }
-            int2 chunkPos = FindContainingChunk(stepPos);
-            //Debug.Log($"stepPos: {stepPos} chunkPos: {chunkPos}");
-            VoxelChunk chunk = voxelChunks[chunkPos.x, chunkPos.y];
-            int lookup = chunk.LookupVoxel(voxelPos);
 
-            if (lookup != 0)
+            int2 chunkPos = FindContainingChunk(stepPos);
+            try
             {
-                hitData.worldVoxelPos = voxelPos;
-                hitData.hitNormal = lastVoxelPos2 - voxelPos;
-                Debug.Log($"hitdata normal: {hitData.hitNormal}");
-                hitData.blockID = lookup;
-                hitData.didHit = true;
-                return hitData;
+                VoxelChunk chunk = voxelChunks[chunkPos.x, chunkPos.y];
+                int lookup = chunk.LookupVoxel(voxelPos);
+
+                if (lookup != 0)
+                {
+                    hitData.worldVoxelPos = voxelPos;
+                    hitData.hitNormal = lastVoxelPos2 - voxelPos;
+                    Debug.Log($"hitdata normal: {hitData.hitNormal}");
+                    hitData.blockID = lookup;
+                    hitData.didHit = true;
+                    return hitData;
+                }
+            } 
+            catch (NullReferenceException ex)
+            {
+                Debug.Log($"No chunk at ({chunkPos.x}, {chunkPos.y})");
             }
+            
+            
         }
         return hitData;
 
