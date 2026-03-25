@@ -25,18 +25,18 @@ static const float2  TexPY2[4] = { float2(0.251, 0.999), float2(0.499, 0.999), f
 static const float2  TexNZ2[4] = { float2(0.251, 0.749), float2(0.499, 0.749), float2(0.499, 0.501), float2(0.251, 0.501)};
 static const float2  TexPZ2[4] = { float2(0.751, 0.749), float2(0.999, 0.749), float2(0.999, 0.501), float2(0.751, 0.501)};
 
-static const float2  TexNX[4] = { float2(0.001, 0.001), float2(0.001, 0.999), float2(0.999, 0.999), float2(0.999, 0.001)};
-static const float2  TexPX[4] = { float2(0.001, 0.001), float2(0.001, 0.999), float2(0.999, 0.999), float2(0.999, 0.001)};
-static const float2  TexNY[4] = { float2(0.001, 0.001), float2(0.001, 0.999), float2(0.999, 0.999), float2(0.999, 0.001)};
-static const float2  TexPY[4] = { float2(0.001, 0.001), float2(0.001, 0.999), float2(0.999, 0.999), float2(0.999, 0.001)};
-static const float2  TexNZ[4] = { float2(0.001, 0.001), float2(0.001, 0.999), float2(0.999, 0.999), float2(0.999, 0.001)};
-static const float2  TexPZ[4] = { float2(0.001, 0.001), float2(0.001, 0.999), float2(0.999, 0.999), float2(0.999, 0.001)};
+static const float2  TexNX[4] = { float2(0.001, 0.001), float2(0.001, 0.999), float2(0.999, 0.999), float2(0.999, 0.001) };
+static const float2  TexPX[4] = { float2(0.001, 0.999), float2(0.999, 0.999), float2(0.999, 0.001), float2(0.001, 0.001) };
+static const float2  TexNY[4] = { float2(0.001, 0.001), float2(0.001, 0.999), float2(0.999, 0.999), float2(0.999, 0.001) };
+static const float2  TexPY[4] = { float2(0.001, 0.001), float2(0.001, 0.999), float2(0.999, 0.999), float2(0.999, 0.001) };
+static const float2  TexNZ[4] = { float2(0.001, 0.999), float2(0.999, 0.999), float2(0.999, 0.001), float2(0.001, 0.001) };
+static const float2  TexPZ[4] = { float2(0.001, 0.999), float2(0.999, 0.999), float2(0.999, 0.001), float2(0.001, 0.001) };
 
 static const float4 idColors[4] = {
-    float4(0.0,0.0,0.0,0.0),
-    float4(0.0, 1.0, 0.0, 1.0),
-    float4(0.3, 0.2, 0.1, 1.0),
-    float4(0.3, 0.3, 0.3, 1.0)
+    float4(0., 0., 0., 1.),
+    float4(1., 0., 0., 1.),
+    float4(2., 0., 0., 1.),
+    float4(3., 0., 0., 1.)
 };
 
 // Map from a 3D voxel pos to an index in the flat voxel buffer
@@ -65,7 +65,15 @@ void GenerateVoxels (uint3 id : SV_DispatchThreadID)
         
 
         int index = ComputeIndex(pos, Size);
-        Voxels[index] = max(int(floor(n * Threshold)), 0);
+        int voxelID = max(int(floor(n * Threshold)), 0);
+
+        if (voxelID == 1 && y < Size.y-1) { // put dirt under grass
+            if(Voxels[ComputeIndex(pos + uint3(0,1,0), Size)] > 0) {
+                voxelID = 2;
+            } 
+        }
+
+        Voxels[index] = voxelID; 
         //Voxels[index] = 1;
     }
 
@@ -77,7 +85,7 @@ RWStructuredBuffer<float3> Normals;
 RWStructuredBuffer<float4> Colors;
 RWStructuredBuffer<float2> TexCoords;
 
-[numthreads(16,4,16)]
+[numthreads(16,1,16)]
 void ComputeMesh (uint3 id : SV_DispatchThreadID)
 {
     // Each thread represents one vertical column
@@ -121,54 +129,61 @@ void ComputeMesh (uint3 id : SV_DispatchThreadID)
             // If adjacent voxel is empty, add a face
             
             uint index = 24 * voxIndex; // map from index in Voxel buffer to index in vertex buffer, which has 24 spaces per Voxel (6 faces * 4 verts)
+            float4 faceColor = float4(voxel, 0., 0., 1.);
 
             if (vox_nx == 0) {
                 // Loop 4 times to add all 4 verts per face
                 for(int i=0; i<4; i++) {
                     Vertices[index + i] = VertsNX[i] + pos;
                     Normals[index + i] = NormNX;
-                    Colors[index + i] = idColors[voxel];
-                    TexCoords[index + i] = TexNX[3-i] + float2(voxel, 0.);
+                    faceColor.y = 0.;
+                    Colors[index + i] = faceColor;
+                    TexCoords[index + i] = TexNX[3-i];// + float2(voxel, 0.);
                 }
             }
             if (vox_px == 0) {
                 for(int i=0; i<4; i++) {
                     Vertices[index + i + 4] = VertsPX[i] + pos;
                     Normals[index + i + 4] = NormPX;
-                    Colors[index + i + 4] = idColors[voxel];
-                    TexCoords[index + i + 4] = TexPX[3-i] + float2(voxel, 0.);
+                    faceColor.y = 1.;
+                    Colors[index + i + 4] = faceColor;
+                    TexCoords[index + i + 4] = TexPX[3-i];// + float2(voxel, 0.);
                 }
             }
             if (vox_ny == 0) {
                 for(int i=0; i<4; i++) {
                     Vertices[index + i + 8] = VertsNY[i] + pos;
                     Normals[index + i + 8] = NormNY;
-                    Colors[index + i + 8] = idColors[voxel];
-                    TexCoords[index + i + 8] = TexNY[3-i] + float2(voxel, 0.);
+                    faceColor.y = 2.;
+                    Colors[index + i + 8] = faceColor;
+                    TexCoords[index + i + 8] = TexNY[3-i];// + float2(voxel, 0.);
                 }
             }
             if (vox_py == 0) {
                 for(int i=0; i<4; i++) {
                     Vertices[index + i + 12] = VertsPY[i] + pos;
                     Normals[index + i + 12] = NormPY;
-                    Colors[index + i + 12] = idColors[voxel];
-                    TexCoords[index + i + 12] = TexPY[3-i] + float2(voxel, 0.);
+                    faceColor.y = 3.;
+                    Colors[index + i + 12] = faceColor;
+                    TexCoords[index + i + 12] = TexPY[3-i];// + float2(voxel, 0.);
                 }
             }
             if (vox_nz == 0) {
                 for(int i=0; i<4; i++) {
                     Vertices[index + i + 16] = VertsNZ[i] + pos;
                     Normals[index + i + 16] = NormNZ;
-                    Colors[index + i + 16] = idColors[voxel];
-                    TexCoords[index + i + 16] = TexNZ[3-i] + float2(voxel, 0.);
+                    faceColor.y = 4.;
+                    Colors[index + i + 16] = faceColor;
+                    TexCoords[index + i + 16] = TexNZ[3-i];// + float2(voxel, 0.);
                 }
             }
             if (vox_pz == 0) {
                 for(int i=0; i<4; i++) {
                     Vertices[index + i + 20] = VertsPZ[i] + pos;
                     Normals[index + i + 20] = NormPZ;
-                    Colors[index + i + 20] = idColors[voxel];
-                    TexCoords[index + i + 20] = TexPZ[3-i] + float2(voxel, 0.);
+                    faceColor.y = 5.;
+                    Colors[index + i + 20] = faceColor;
+                    TexCoords[index + i + 20] = TexPZ[3-i];// + float2(voxel, 0.);
                 }
             }
         }

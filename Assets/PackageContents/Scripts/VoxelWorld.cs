@@ -12,6 +12,8 @@ public class VoxelWorld : MonoBehaviour
     public GameObject ChunkPrefab;
     public int Spacing = 8;
 
+    public LayerMask BlockVoxelPlacement;
+
    // private List<int2> chunks = new List<int2>();
     private VoxelChunk[,] voxelChunks;
 
@@ -72,6 +74,10 @@ public class VoxelWorld : MonoBehaviour
     {
         int2 chunkPos = FindContainingChunk(worldPos);
         VoxelChunk chunk = voxelChunks[chunkPos.x, chunkPos.y];
+        if (Physics.CheckBox(worldPos, Vector3.one * 0.5f, Quaternion.identity, BlockVoxelPlacement.value))
+        {
+            return;
+        }
         chunk.PlaceBlock(worldPos, blockType);
     }
 
