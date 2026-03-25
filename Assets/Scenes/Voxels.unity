@@ -931,7 +931,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6486164264205090042, guid: 33310f4d894d76046b677c2e8a3d9976, type: 3}
       propertyPath: gravityForce
-      value: -12
+      value: -18
       objectReference: {fileID: 0}
     - target: {fileID: 6486164264205090042, guid: 33310f4d894d76046b677c2e8a3d9976, type: 3}
       propertyPath: airborneControl

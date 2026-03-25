@@ -49,7 +49,7 @@ public class VoxelWorld : MonoBehaviour
         {
             if (voxelChunks[pos.x, pos.y] == null)
             {
-                Debug.Log($"Adding chunk at ({pos.x},{pos.y})");
+                //Debug.Log($"Adding chunk at ({pos.x},{pos.y})");
                 //chunks.Add(pos);
                 VoxelChunk newChunk = Instantiate(ChunkPrefab).GetComponent<VoxelChunk>();
                 voxelChunks[pos.x, pos.y] = newChunk;

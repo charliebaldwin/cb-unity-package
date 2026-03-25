@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using Unity.Mathematics;
 using UnityEngine;
@@ -8,6 +9,8 @@ using UnityEngine.Rendering;
 using VInspector;
 using static Perlin;
 using static UnityEditor.PlayerSettings;
+using Color = UnityEngine.Color;
+using Random = UnityEngine.Random;
 
 public class VoxelChunk : MonoBehaviour
 {
@@ -28,6 +31,7 @@ public class VoxelChunk : MonoBehaviour
     public RenderTexture testTex;
 
     public int[,,] voxelData = new int[1,1,1];
+    private bool meshDirty = true;
     
     public Vector3 NoiseTranslate = Vector3.zero;
     public float NoiseScale = 0.1f;
@@ -75,7 +79,7 @@ public class VoxelChunk : MonoBehaviour
     private void Start()
     {
         GenerateVoxels(Compute);
-        ComputeMesh(Compute);
+        //ComputeMesh(Compute);
 
     }
 
@@ -146,33 +150,44 @@ public class VoxelChunk : MonoBehaviour
     {
         Size3D.y = Mathf.Clamp(Size3D.y, 1, 128);
 
-        if (transform.position != lastPos || NoiseScale != lastScale || lastThresh != NoiseThreshold || lastSize != Size3D)
-        {
-            lastPos = transform.position;
-            lastScale = NoiseScale;
-            lastThresh = NoiseThreshold;
-            lastSize = Size3D;
+        //if (transform.position != lastPos || NoiseScale != lastScale || lastThresh != NoiseThreshold || lastSize != Size3D)
+        //{
+        //    lastPos = transform.position;
+        //    lastScale = NoiseScale;
+        //    lastThresh = NoiseThreshold;
+        //    lastSize = Size3D;
 
-            //VoxelNoise(Compute);
-            ComputeMesh(Compute);
+        //    //VoxelNoise(Compute);
+        //    ComputeMesh(Compute);
 
-        }
+        //}
         
 
+    }
+
+    private void FixedUpdate()
+    {
+        BlockUpdate();
+
+        
     }
     private void LateUpdate()
     {
         //vBuffer.Release();
         //nBuffer.Release();
         //cBuffer.Release();
-
+        if (meshDirty)
+        {
+            ComputeMesh(Compute);
+            meshDirty = false;
+        }
     }
 
 
     private void GenerateVoxels(ComputeShader compute)
     {
 
-        int kernel = compute.FindKernel("GenerateVoxels");
+        int kernel = compute.FindKernel("GenerateTerrain");
 
         voxelBuffer = new ComputeBuffer(Size3D.x * Size3D.y * Size3D.z, sizeof(int));
 
@@ -185,6 +200,18 @@ public class VoxelChunk : MonoBehaviour
         compute.Dispatch(kernel, Size3D.x, 1, Size3D.z);
 
         int[] vData = new int[Size3D.x * Size3D.y * Size3D.z];
+        //voxelBuffer.GetData(vData);
+
+        kernel = compute.FindKernel("SetTerrainBlocks");
+        compute.SetBuffer(kernel, "Voxels", voxelBuffer);
+        compute.SetVector("Size", new Vector4(Size3D.x, Size3D.y, Size3D.z, 0.0f));
+        compute.Dispatch(kernel, Size3D.x, 1, Size3D.z);
+        //voxelBuffer.GetData(vData);
+
+        kernel = compute.FindKernel("AddOres");
+        compute.SetBuffer(kernel, "Voxels", voxelBuffer);
+        compute.Dispatch(kernel, Size3D.x, 1, Size3D.z);
+
         voxelBuffer.GetData(vData);
         voxelData = FlatTo3DArray(vData, Size3D);
 
@@ -202,6 +229,7 @@ public class VoxelChunk : MonoBehaviour
         tBuffer = new ComputeBuffer(bufferSizeMult * size3d, 2 * sizeof(float));
 
 
+        voxelBuffer.SetData(ThreeDToFlatArray(voxelData, Size3D));
         compute.SetBuffer(kernel, "Voxels", voxelBuffer);
         compute.SetFloat("Threshold", NoiseThreshold);
         compute.SetVector("Size", new Vector4(Size3D.x, Size3D.y, Size3D.z, 1.0f));
@@ -286,12 +314,60 @@ public class VoxelChunk : MonoBehaviour
 
         meshCollider.sharedMesh = meshFilter.mesh;
 
-        Debug.Log($"Final mesh vertex count: {meshFilter.mesh.vertexCount}");
+        //Debug.Log($"Final mesh vertex count: {meshFilter.mesh.vertexCount}");
 
         //vBuffer.Release();
         //nBuffer.Release();
         //cBuffer.Release();
         //tBuffer.Release();
+    }
+
+    private void BlockUpdate()
+    {
+        for (int x = 0; x < Size3D.x; x++)
+        {
+            for(int y = 0; y < Size3D.y; y++)
+            {
+                for(int z = 0; z < Size3D.z; z++)
+                {
+                    int voxelID = voxelData[x, y, z];
+
+                    switch (voxelID)
+                    {
+                        case (1):
+                            if (y < Size3D.y - 1)
+                            {
+                                if (voxelData[x, y + 1, z] > 0)
+                                {
+                                    voxelData[x, y, z] = 2;
+                                    meshDirty = true;
+                                }
+                            }
+                            break;
+                        case (2):
+                            if (y < Size3D.y-1)
+                            {
+                                if (voxelData[x, y + 1, z] == 0){
+                                    if (BlockRandomEvent(new int3(x,y,z), 0.0025f))
+                                    {
+                                        voxelData[x, y, z] = 1;
+                                        meshDirty = true;
+                                    }
+                                }
+                            }
+                            break;
+
+                    }
+
+                }
+            }
+        }
+    }
+    private bool BlockRandomEvent(int3 pos, float probability)
+    {
+        int seed = (pos.x + Size3D.x * pos.y + Size3D.x * Size3D.y * pos.z) + (1000*ChunkCoord.x + 10000*ChunkCoord.y) + (Time.frameCount % 10000);
+        Random.InitState(seed);
+        return Random.Range(0f, 1f) < probability;
     }
 
     private Vector3[] TrimArrayVec3(Vector3[] array)
@@ -489,7 +565,8 @@ public class VoxelChunk : MonoBehaviour
         voxelData[voxPosition.x, voxPosition.y, voxPosition.z] = 0;
         voxelBuffer.SetData(ThreeDToFlatArray(voxelData, Size3D));
 
-        ComputeMesh(Compute);
+        meshDirty = true;
+        //ComputeMesh(Compute);
     }
     private void AddVoxel (ComputeShader compute, Vector3Int voxPosition, int blockType)
     {
@@ -498,7 +575,8 @@ public class VoxelChunk : MonoBehaviour
             voxelData[voxPosition.x, voxPosition.y, voxPosition.z] = blockType;
             voxelBuffer.SetData(ThreeDToFlatArray(voxelData, Size3D));
 
-            ComputeMesh(Compute);
+            meshDirty = true;
+            //ComputeMesh(Compute);
         }
     }
 

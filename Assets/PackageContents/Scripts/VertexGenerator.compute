@@ -1,7 +1,10 @@
-#pragma kernel GenerateVoxels
+#pragma kernel GenerateTerrain
+#pragma kernel SetTerrainBlocks
+#pragma kernel AddOres
 #pragma kernel ComputeMesh
 
 #include "Packages/jp.keijiro.noiseshader/Shader/SimplexNoise3D.hlsl"
+#include "Packages/jp.keijiro.noiseshader/Shader/ClassicNoise3D.hlsl"
 
 
 static const float3  VertsNX[4] = { float3(-0.5, -0.5,  0.5), float3(-0.5,  0.5,  0.5), float3(-0.5,  0.5, -0.5), float3(-0.5, -0.5, -0.5)};
@@ -53,7 +56,7 @@ float Threshold;
 float3 TranslateNoise;
 
 [numthreads(16,4,16)]
-void GenerateVoxels (uint3 id : SV_DispatchThreadID)
+void GenerateTerrain (uint3 id : SV_DispatchThreadID)
 {
     for (uint y=0; y<Size.y; y++) {
         uint3 pos = uint3(id.x % Size.x, y, id.z % Size.z);
@@ -66,18 +69,66 @@ void GenerateVoxels (uint3 id : SV_DispatchThreadID)
 
         int index = ComputeIndex(pos, Size);
         int voxelID = max(int(floor(n * Threshold)), 0);
-
-        if (voxelID == 1 && y < Size.y-1) { // put dirt under grass
-            if(Voxels[ComputeIndex(pos + uint3(0,1,0), Size)] > 0) {
-                voxelID = 2;
-            } 
+        if (voxelID > 0) {
+            voxelID = 3;
         }
 
+        //if (voxelID == 1 && y < Size.y-1) { // put dirt under grass
+        //    if(Voxels[ComputeIndex(pos + uint3(0,1,0), Size)] > 0) {
+        //        voxelID = 2;
+        //    } 
+        //}
         Voxels[index] = voxelID; 
         //Voxels[index] = 1;
     }
-
 }   
+
+
+
+[numthreads(16,4,16)]
+void SetTerrainBlocks (uint3 id : SV_DispatchThreadID) {
+    for (uint y=0; y<Size.y; y++) {
+        uint3 pos = uint3(id.x % Size.x, y, id.z % Size.z);
+
+        int index = ComputeIndex(pos, Size);
+
+        int voxel = Voxels[index];
+        int voxel_up1 = Voxels[ComputeIndex(pos + uint3(0,1,0), Size)];
+
+        int index_down1 = ComputeIndex(pos + uint3(0,-1,0), Size);
+        int index_down2 = ComputeIndex(pos + uint3(0,-2,0), Size);
+
+        if (voxel > 0) {
+            
+            if (y == Size.y-1 || voxel_up1 == 0) {
+                Voxels[index] = 1;
+
+                for (int i=1; i<4; i++) {
+                    if (y > i-1) {
+                        Voxels[ComputeIndex(pos + uint3(0,-1 * i,0), Size)] = 2;
+                    }
+                }
+                
+            }
+        }
+
+    }
+}
+
+[numthreads(16,4,16)]
+void AddOres (uint3 id : SV_DispatchThreadID) {
+    for (uint y=0; y<Size.y; y++) {
+        uint3 pos = uint3(id.x % Size.x, y, id.z % Size.z);
+        int index = ComputeIndex(pos, Size);
+        if (Voxels[index] == 3) {
+            float n = SimplexNoise(pos);
+            if (n < 0.0001) {
+                Voxels[index] = 6;
+            }
+        }
+    }
+        
+}
 
 
 RWStructuredBuffer<float3> Vertices;

@@ -187,7 +187,7 @@ public class ChunkRaycast : MonoBehaviour
                     break;
                 case 2:
                     VoxelWorld.Instance.AddVoxel(hitData.worldVoxelPos + hitData.hitNormal, placedBlockType);
-                    Debug.Log($"normal: {hitData.hitNormal}"); 
+                    //Debug.Log($"normal: {hitData.hitNormal}"); 
                     break;
             }
         } 
