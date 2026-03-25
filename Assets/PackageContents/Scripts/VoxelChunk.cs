@@ -38,7 +38,7 @@ public class VoxelChunk : MonoBehaviour
 
     private MeshFilter meshFilter;
     private Mesh mesh;
-    private BoxCollider boxCollider;
+    private MeshCollider meshCollider;
 
     private Vector3 lastPos = Vector3.zero;
     private float lastScale = 0f;
@@ -61,7 +61,7 @@ public class VoxelChunk : MonoBehaviour
     private void Awake()
     {
         meshFilter = GetComponent<MeshFilter>();
-        boxCollider = GetComponent<BoxCollider>();
+        meshCollider = GetComponent<MeshCollider>();
         voxelTex = new RenderTexture(voxelTex);
 
         lastPos = transform.position;
@@ -69,8 +69,6 @@ public class VoxelChunk : MonoBehaviour
         lastThresh = NoiseThreshold;
         lastSize = Size3D;
 
-        boxCollider.size = new Vector3(Size3D.x, Size3D.y, Size3D.z);
-        boxCollider.center = boxCollider.size * 0.5f - new Vector3(0.5f, 0.5f, 0.5f);
     }
 
 
@@ -158,8 +156,6 @@ public class VoxelChunk : MonoBehaviour
             //VoxelNoise(Compute);
             ComputeMesh(Compute);
 
-            boxCollider.size = new Vector3(Size3D.x, Size3D.y, Size3D.z);
-            boxCollider.center = boxCollider.size * 0.5f - new Vector3(0.5f,0.5f,0.5f);
         }
         
 
@@ -287,6 +283,8 @@ public class VoxelChunk : MonoBehaviour
         meshFilter.mesh.colors = cDataTrimmed;
         meshFilter.mesh.triangles = GenerateIndices(vDataTrimmed.Length);
         meshFilter.mesh.RecalculateBounds();
+
+        meshCollider.sharedMesh = meshFilter.mesh;
 
         Debug.Log($"Final mesh vertex count: {meshFilter.mesh.vertexCount}");
 

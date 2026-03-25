@@ -76,7 +76,7 @@ public class PlayerController : MonoBehaviour
         newMotion += walkInput.y * currentMoveSpeed * transform.up;
 
         motion = Vector3.Lerp(motion, newMotion, grounded ? 1f : airborneControl);
-        //motion.y = ComputeGravity();
+        motion.y = ComputeGravity();
 
 
 
@@ -130,15 +130,16 @@ public class PlayerController : MonoBehaviour
         if (charController.isGrounded)
         {
             gravity = 0f;
-            if (Input.GetKeyDown(jumpKey))
-            {
-                gravity = jumpForce;
-            }
+            
         } 
         else
         {
             gravity = gravity + Time.deltaTime * gravityForce;
             gravity = Mathf.Clamp(gravity, -100f, 100f);
+        }
+        if (Input.GetKeyDown(jumpKey))
+        {
+            gravity = jumpForce;
         }
         return gravity;
     }
