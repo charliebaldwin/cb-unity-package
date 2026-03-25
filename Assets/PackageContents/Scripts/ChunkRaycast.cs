@@ -73,6 +73,12 @@ public class ChunkRaycast : MonoBehaviour
             placedBlockType = 2;
         if (Input.GetKeyDown(KeyCode.Alpha3))
             placedBlockType = 3;
+        if (Input.GetKeyDown(KeyCode.Alpha4))
+            placedBlockType = 4;
+        if (Input.GetKeyDown(KeyCode.Alpha5))
+            placedBlockType = 5;
+        if (Input.GetKeyDown(KeyCode.Alpha6))
+            placedBlockType = 6;
 
 
 

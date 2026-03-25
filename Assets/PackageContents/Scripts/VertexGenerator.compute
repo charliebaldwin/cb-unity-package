@@ -57,9 +57,9 @@ void GenerateVoxels (uint3 id : SV_DispatchThreadID)
 {
     for (uint y=0; y<Size.y; y++) {
         uint3 pos = uint3(id.x % Size.x, y, id.z % Size.z);
-        float n = 3*SimplexNoise(pos * Scale + TranslateNoise);
+        float n = 4*SimplexNoise(pos * Scale + TranslateNoise);
         float yRamp = 1.0 - (float(y) / Size.y);
-        n += 5*pow(yRamp, 3.0);
+        n += 6*pow(yRamp, 3.0);
         n *= pow(yRamp, 0.5);
         //n = clamp(n, 0.0, 1.0);
         
