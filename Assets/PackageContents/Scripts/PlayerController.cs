@@ -19,6 +19,7 @@ public class PlayerController : MonoBehaviour
     public float jumpForce = 10f;
     public float airborneControl = 0.5f;
     public float gravityForce = -9.8f;
+    [ShowInInspector] private bool grounded;
 
 
     [Foldout("Camera")]
@@ -65,7 +66,7 @@ public class PlayerController : MonoBehaviour
         bool sprinting = Input.GetKey(sprintKey);
         currentMoveSpeed = Mathf.Lerp(currentMoveSpeed, sprinting ? sprintSpeed : walkSpeed, 0.1f);
 
-        bool grounded = charController.isGrounded;
+        grounded = charController.isGrounded;
 
         Vector3 newMotion = Vector3.zero;
         newMotion += walkInput.x * currentMoveSpeed * transform.right;
@@ -87,19 +88,10 @@ public class PlayerController : MonoBehaviour
 
         Quaternion inverseQ = Quaternion.Inverse(cameraPivot.transform.localRotation);
         handPivot.transform.localRotation = Quaternion.Slerp(inverseQ, Quaternion.identity, handRotateAmount);
+
+        motion = Vector3.zero;
     }
 
-    private void OnDrawGizmos()
-    {
-        Vector3 lineVector = motion;
-        lineVector.y = 0f;
-        Gizmos.color = Color.green;
-        Gizmos.DrawLine(transform.position, transform.position + lineVector);
-
-        if (playerCam == null) playerCam = GetComponentInChildren<Camera>(); 
-        Gizmos.color = Color.red;
-        Gizmos.DrawLine(playerCam.transform.position, playerCam.transform.position + playerCam.transform.forward * targetAimRange);
-    }
 
     private Vector3 GetMovementInput()
     {
@@ -127,9 +119,9 @@ public class PlayerController : MonoBehaviour
 
     private float ComputeGravity()
     {
-        if (charController.isGrounded)
+        if (grounded)
         {
-            gravity = 0f;
+            gravity = Time.deltaTime * gravityForce;
             
         } 
         else
@@ -137,7 +129,7 @@ public class PlayerController : MonoBehaviour
             gravity = gravity + Time.deltaTime * gravityForce;
             gravity = Mathf.Clamp(gravity, -100f, 100f);
         }
-        if (Input.GetKeyDown(jumpKey))
+        if (Input.GetKeyDown(jumpKey) && grounded)
         {
             gravity = jumpForce;
         }
@@ -161,6 +153,18 @@ public class PlayerController : MonoBehaviour
     private void ButtonFunction()
     {
         Debug.Log("Pressed inspector button!");
+    }
+
+    private void OnDrawGizmos()
+    {
+        Vector3 lineVector = motion;
+        lineVector.y = 0f;
+        Gizmos.color = Color.green;
+        Gizmos.DrawLine(transform.position, transform.position + lineVector);
+
+        if (playerCam == null) playerCam = GetComponentInChildren<Camera>();
+        Gizmos.color = Color.red;
+        Gizmos.DrawLine(playerCam.transform.position, playerCam.transform.position + playerCam.transform.forward * targetAimRange);
     }
 
 }
