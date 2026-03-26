@@ -121,8 +121,8 @@ void AddOres (uint3 id : SV_DispatchThreadID) {
         uint3 pos = uint3(id.x % Size.x, y, id.z % Size.z);
         int index = ComputeIndex(pos, Size);
         if (Voxels[index] == 3) {
-            float n = SimplexNoise(pos);
-            if (n < 0.0001) {
+            float n = SimplexNoise(pos * 100.);
+            if (n < 0.00001) {
                 Voxels[index] = 6;
             }
         }
