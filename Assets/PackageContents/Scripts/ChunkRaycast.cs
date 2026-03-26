@@ -10,6 +10,8 @@ public class ChunkRaycast : MonoBehaviour
 
     public GameObject Cursor;
 
+    public Material UICubeMat;
+
     private Vector3 debugRayStart;
     private Vector3 debugRayEnd;
     private Vector3 hitVoxPos;
@@ -80,7 +82,7 @@ public class ChunkRaycast : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.Alpha6))
             placedBlockType = 6;
 
-
+        UICubeMat.SetInteger("_Index", placedBlockType);
 
     }
 
