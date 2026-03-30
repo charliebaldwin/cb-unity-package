@@ -193,7 +193,7 @@ public class VoxelChunk : MonoBehaviour
         // Generate terrain shape (all stone)
         int kernel = compute.FindKernel("GenerateTerrain");
         compute.SetBuffer(kernel, "Voxels", voxelBuffer);
-        compute.SetVector("TranslateNoise", transform.position * NoiseScale);
+        compute.SetVector("TranslateNoise", transform.position);
         compute.SetFloat("Scale", NoiseScale);
         compute.SetVector("Size", new Vector4(Size3D.x, Size3D.y, Size3D.z, 0.0f));
         compute.SetFloat("Threshold", NoiseThreshold);

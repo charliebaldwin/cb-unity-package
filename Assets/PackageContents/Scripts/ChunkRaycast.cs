@@ -81,6 +81,14 @@ public class ChunkRaycast : MonoBehaviour
             placedBlockType = 5;
         if (Input.GetKeyDown(KeyCode.Alpha6))
             placedBlockType = 6;
+        if (Input.GetKeyDown(KeyCode.Alpha7))
+            placedBlockType = 7;
+        if (Input.GetKeyDown(KeyCode.Alpha8))
+            placedBlockType = 8;
+        if (Input.GetKeyDown(KeyCode.Alpha9))
+            placedBlockType = 9;
+        if (Input.GetKeyDown(KeyCode.Alpha0))
+            placedBlockType = 10;
 
         UICubeMat.SetInteger("_Index", placedBlockType);
 

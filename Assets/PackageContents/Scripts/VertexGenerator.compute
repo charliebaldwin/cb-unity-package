@@ -60,17 +60,20 @@ void GenerateTerrain (uint3 id : SV_DispatchThreadID)
 {
     for (uint y=0; y<Size.y; y++) {
         uint3 pos = uint3(id.x % Size.x, y, id.z % Size.z);
-        float n = 4*SimplexNoise(pos * Scale + TranslateNoise);
-        float yRamp = 1.0 - (float(y) / Size.y);
-        n += 6*pow(yRamp, 3.0);
-        n *= pow(yRamp, 0.5);
-        //n = clamp(n, 0.0, 1.0);
+        int index = ComputeIndex(pos, Size);
+
+        float n = SimplexNoise((float3(pos.x,0.,pos.z) + TranslateNoise) * Scale);
+        float yRamp = pow(1-(float(y) / Size.y), 2.);
+
+        float t = yRamp;
+        t += n * 0.1;
+
         
 
-        int index = ComputeIndex(pos, Size);
-        int voxelID = max(int(floor(n * Threshold)), 0);
-        if (voxelID > 0) {
-            voxelID = 3;
+        if (t > 0.5) {
+            Voxels[index] = 3; 
+        } else {
+            Voxels[index] = 0; 
         }
 
         //if (voxelID == 1 && y < Size.y-1) { // put dirt under grass
@@ -78,7 +81,6 @@ void GenerateTerrain (uint3 id : SV_DispatchThreadID)
         //        voxelID = 2;
         //    } 
         //}
-        Voxels[index] = voxelID; 
         //Voxels[index] = 1;
     }
 }   
@@ -109,6 +111,11 @@ void SetTerrainBlocks (uint3 id : SV_DispatchThreadID) {
                     }
                 }
                 
+            } else {
+                float n = SimplexNoise((pos + TranslateNoise) * Scale * 3.);
+                if (n < -0.3) {
+                    Voxels[index] = 4;
+                }
             }
         }
 
@@ -116,10 +123,12 @@ void SetTerrainBlocks (uint3 id : SV_DispatchThreadID) {
 }
 
 [numthreads(16,4,16)]
-void AddOres (uint3 id : SV_DispatchThreadID) {
+void AddOres (uint3 id : SV_DispatchThreadID) {\
+
     for (uint y=0; y<Size.y; y++) {
         uint3 pos = uint3(id.x % Size.x, y, id.z % Size.z);
         int index = ComputeIndex(pos, Size);
+
         if (Voxels[index] == 3) {
             float n = SimplexNoise(pos * 100.);
             if (n < 0.00001) {

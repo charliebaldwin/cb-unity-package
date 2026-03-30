@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Unity.Mathematics;
 using UnityEngine;
+using UnityEngine.VFX;
 
 public class VoxelWorld : MonoBehaviour
 {
@@ -13,6 +14,8 @@ public class VoxelWorld : MonoBehaviour
     public int Spacing = 8;
 
     public LayerMask BlockVoxelPlacement;
+
+    public GameObject BlockBreakVFXPrefab;
 
    // private List<int2> chunks = new List<int2>();
     private VoxelChunk[,] voxelChunks;
@@ -55,6 +58,7 @@ public class VoxelWorld : MonoBehaviour
                 voxelChunks[pos.x, pos.y] = newChunk;
                 newChunk.ChunkCoord = pos;
                 newChunk.transform.position = new Vector3(pos.x, 0, pos.y) * Spacing;
+                newChunk.transform.parent = transform;
             }
         }
         catch (IndexOutOfRangeException ex) 
@@ -67,6 +71,8 @@ public class VoxelWorld : MonoBehaviour
     {
         int2 chunkPos = FindContainingChunk(worldPos);
         VoxelChunk chunk = voxelChunks[chunkPos.x, chunkPos.y];
+        GameObject breakVFX = Instantiate(BlockBreakVFXPrefab, worldPos, Quaternion.identity);
+        breakVFX.GetComponent<VFXObject>().InitVFX(chunk.LookupVoxel(worldPos));
         chunk.BreakBlock(worldPos);
     }
 
